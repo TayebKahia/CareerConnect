@@ -2186,10 +2186,10 @@
                 "code": "43-9111.00"
             }
         ],
-        "title": "Actuaries",
+        "title": "Actuarial Analyst",
         "description": "Analyze statistical data, such as mortality, accident, sickness, disability, and retirement rates and construct probability tables to forecast risk and liability for payment of future benefits. May ascertain insurance rates required and cash reserves necessary to ensure payment of future benefits.",
         "alternative_titles": [
-            "Actuarial Analyst",
+            "Actuaries",
             "Actuarial Associate",
             "Actuarial Consultant",
             "Actuary",
@@ -4518,7 +4518,7 @@
                 "code": "43-9111.00"
             }
         ],
-        "title": "Bioinformatics Technicians",
+        "title": "Scientific Informatics Analyst",
         "description": "Apply principles and methods of bioinformatics to assist scientists in areas such as pharmaceuticals, medical technology, biotechnology, computational biology, proteomics, computer information science, biology and medical informatics. Apply bioinformatics tools to visualize, analyze, manipulate or interpret molecular data. May build and maintain databases for processing and analyzing genomic or other biological information.",
         "alternative_titles": [
             "Bioinformatics Analyst",
@@ -4527,7 +4527,7 @@
             "Biotechnician",
             "Museum Informatics Specialist",
             "Research Scientist",
-            "Scientific Informatics Analyst"
+            "Bioinformatics Technicians"
         ],
         "education_level_required": [
             {
@@ -13442,7 +13442,7 @@
                 "code": "15-2041.00"
             }
         ],
-        "title": "Clinical Data Managers",
+        "title": "Data Management Manager",
         "description": "Apply knowledge of health care and database management to analyze clinical data, and to identify and report trends.",
         "alternative_titles": [
             "Clinical Data Management Director (CDM Director)",
@@ -13450,7 +13450,7 @@
             "Clinical Data Manager",
             "Clinical Informatics Manager",
             "Data Deliverables Manager",
-            "Data Management Manager"
+            "Clinical Data Managers"
         ],
         "education_level_required": [
             {
@@ -23804,7 +23804,7 @@
                 "code": "15-1241.01"
             }
         ],
-        "title": "Computer Network Support Specialists",
+        "title": "Computer Network Specialists",
         "description": "Analyze, test, troubleshoot, and evaluate existing network systems, such as local area networks (LAN), wide area networks (WAN), cloud networks, servers, and other data communications networks. Perform network maintenance to ensure networks operate correctly with minimal interruption.",
         "alternative_titles": [
             "Computer Network Specialist",
@@ -55937,7 +55937,7 @@
                 "code": "15-1299.01"
             }
         ],
-        "title": "Document Management Specialists",
+        "title": "ECM Consultant (Enterprise Content Management Consultant)",
         "description": "Implement and administer enterprise-wide document management systems and related procedures that allow organizations to capture, store, retrieve, share, and destroy electronic records and documents.",
         "alternative_titles": [
             "Business Records Manager",
@@ -65027,7 +65027,7 @@
                 "code": "15-1299.04"
             }
         ],
-        "title": "Information Security Analysts",
+        "title": "Network Security Analysts",
         "description": "Plan, implement, upgrade, or monitor security measures for the protection of computer networks and information. Assess system vulnerabilities for security risks and propose and implement risk mitigation strategies. May ensure appropriate security controls are in place that will safeguard digital files and vital electronic infrastructure. May respond to computer security breaches and viruses.",
         "alternative_titles": [
             "Information Security Officer",
@@ -70306,7 +70306,7 @@
                 "code": "15-1252.00"
             }
         ],
-        "title": "Information Technology Project Managers",
+        "title": "Scrum Master",
         "description": "Plan, initiate, and manage information technology (IT) projects. Lead and guide the work of technical staff. Serve as liaison between business and technical aspects of projects. Plan project stages and assess business implications for each stage. Monitor progress to assure deadlines, standards, and cost targets are met.",
         "alternative_titles": [
             "Cloud Product Director",
@@ -72600,7 +72600,7 @@
                 "code": "15-2041.00"
             }
         ],
-        "title": "Mathematicians",
+        "title": "Cryptographer",
         "description": "Conduct research in fundamental mathematics or in application of mathematical techniques to science, management, and other fields. Solve problems in various fields using mathematical methods.",
         "alternative_titles": [
             "Computational Mathematician",
@@ -90113,7 +90113,7 @@
                 "code": "19-3022.00"
             }
         ],
-        "title": "Statisticians",
+        "title": "Statistical Analyst",
         "description": "Develop or apply mathematical or statistical theory and methods to collect, organize, interpret, and summarize numerical data to provide usable information. May specialize in fields such as biostatistics, agricultural statistics, business statistics, or economic statistics. Includes mathematical and survey statisticians.",
         "alternative_titles": [
             "Database Analyst",
@@ -92807,7 +92807,7 @@
                 "code": "49-2022.00"
             }
         ],
-        "title": "Telecommunications Engineering Specialists",
+        "title": "Network Engineering Specialists",
         "description": "Design or configure wired, wireless, and satellite communications systems for voice, video, and data services. Supervise installation, service, and maintenance.",
         "alternative_titles": [
             "Communications Engineer",
@@ -104631,7 +104631,7 @@
                 "code": "15-1255.00"
             }
         ],
-        "title": "Web Developers",
+        "title": "Web Developer",
         "description": "Develop and implement websites, web applications, application databases, and interactive web interfaces. Evaluate code to ensure that it is properly structured, meets industry standards, and is compatible with browsers and devices. Optimize website performance, scalability, and server-side code and processes. May develop website infrastructure and integrate websites with other computer applications.",
         "alternative_titles": [
             "Technology Applications Engineer",
