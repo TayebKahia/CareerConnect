@@ -1,3 +1,9 @@
+from src.modeling.models.hetero_gnn_recommendation import (
+    HeteroJobRecommendationSystem,
+    HGNNJobRecommender
+)
+from src.utils.helpers import debug_log
+from src.config import *
 import os
 import json
 import torch
@@ -5,12 +11,18 @@ import pickle
 from sentence_transformers import SentenceTransformer
 from typing import Tuple, Dict, Any, Optional
 
-from src.config import *
-from src.utils.helpers import debug_log
-from src.modeling.models.hetero_gnn_recommendation import (
-    HeteroJobRecommendationSystem,
-    HGNNJobRecommender
-)
+# Add safe globals for PyTorch Geometric classes
+import torch_geometric
+from torch.serialization import add_safe_globals
+
+# Make torch_geometric classes safe for loading
+add_safe_globals(['torch_geometric.data.storage.BaseStorage'])
+add_safe_globals(['torch_geometric.data.data.Data'])
+add_safe_globals(['torch_geometric.data.hetero_data.HeteroData'])
+add_safe_globals(['torch_geometric.utils.undirected.to_undirected'])
+add_safe_globals(['torch_geometric.data.storage.NodeStorage'])
+add_safe_globals(['torch_geometric.data.storage.EdgeStorage'])
+
 
 class ModelManager:
     def __init__(self):
@@ -101,12 +113,13 @@ class ModelManager:
 
         if data_modified:
             return False
-
         try:
             if system_exists and graph_exists:
                 with open(SYSTEM_PATH, 'rb') as f:
                     self.system = pickle.load(f)
-                self.hetero_data = torch.load(GRAPH_PATH, map_location=DEVICE)
+                # Load with weights_only=False to support torch_geometric data structures
+                self.hetero_data = torch.load(
+                    GRAPH_PATH, map_location=DEVICE, weights_only=False)
                 return True
             return False
         except Exception as e:
@@ -164,4 +177,4 @@ class ModelManager:
             return True
         except Exception as e:
             debug_log(f"Error initializing model: {str(e)}")
-            return False 
+            return False
