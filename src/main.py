@@ -1,7 +1,7 @@
 from flask import Flask
 import torch
 
-from src.modeling.models.model_loader import ModelManager
+from models.classes.model_loader import ModelManager
 from src.services.api.routes import register_routes
 from src.utils.helpers import debug_log
 

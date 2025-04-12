@@ -37,7 +37,7 @@ class TestRecommendNew(unittest.TestCase):
 
     def test_endpoint_exists(self):
         """Test that the endpoint exists and returns 400 with empty data"""
-        response = self.client.post('/api/recommend-new',
+        response = self.client.post('/api/recommend-GNN-Onet',
                                     data=json.dumps({}),
                                     content_type='application/json')
         self.assertIn(response.status_code, [400, 500])
@@ -64,7 +64,7 @@ class TestRecommendNew(unittest.TestCase):
             "top_n": 3
         }
 
-        response = self.client.post('/api/recommend-new',
+        response = self.client.post('/api/recommend-GNN-Onet',
                                     data=json.dumps(test_data),
                                     content_type='application/json')
 
