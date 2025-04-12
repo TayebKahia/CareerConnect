@@ -26,8 +26,7 @@ torch.serialization.add_safe_globals(
     ['torch_geometric.data.storage.EdgeStorage'])
 
 # Cache path constants
-CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(
-    os.path.dirname(os.path.dirname(__file__)))), 'models', 'cache')
+CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
 GRAPH_CACHE_PATH = os.path.join(CACHE_DIR, 'new_model_graph_data.pt')
 EMBEDDINGS_CACHE_PATH = os.path.join(CACHE_DIR, 'new_model_embeddings.pt')
 MAPPINGS_CACHE_PATH = os.path.join(CACHE_DIR, 'new_model_mappings.pkl')
