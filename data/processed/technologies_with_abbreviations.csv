@@ -1,0 +1,239 @@
+Technology,abrv
+.NET (5+),.NET
+.NET Framework (1.0 - 4.8),.NET FW
+.NET MAUI,MAUI
+APT,
+ASP.NET,ASPNET
+ASP.NET CORE,ASPNETCORE
+Ada,
+Alibaba Cloud,AC
+Amazon Web Services (AWS),AWS
+Angular,Ng
+AngularJS,AngJS
+Ansible,
+Ant,
+Apache Kafka,Kafka
+Apache Spark,Spark
+Apex,
+Arduino,
+Assembly,
+Astro,
+Bash/Shell (all shells),Shell
+BigQuery,
+Blazor,
+Boost.Test,
+Bun,
+C,
+C#,C#
+C++,
+CMake,
+CUDA,
+CUTE,
+Capacitor,
+Cargo,
+Cassandra,Cass
+Catch2,
+Chef,
+Chocolatey,choco
+Clickhouse,
+Clojure,
+Cloud Firestore,CF
+Cloudflare,
+Cobol,
+Cockroachdb,
+CodeIgniter,
+Colocation,
+Composer,
+Cordova,
+Cosmos DB,CDB
+Couch DB,CD
+Couchbase,
+Crystal,
+Dagger,
+Dart,
+Databricks,
+Databricks SQL,DS
+Datomic,
+Delphi,
+Deno,
+Digital Ocean,DO
+DirectX,DX
+Django,
+Docker,
+Drupal,
+DuckDB,
+Dynamodb,
+Elasticsearch,ES
+Electron,
+Elixir,
+Elm,
+Erlang,
+EventStoreDB,
+Express,Expr
+F#,
+FastAPI,
+Fastify,
+Firebase,FB
+Firebase Realtime Database,FBRTDB
+Firebird,FB
+Flask,
+Flutter,
+Fly.io,
+Fortran,
+GDScript,
+GNU GCC,GG
+GTK,
+Gatsby,
+Go,Go
+Godot,
+Google Cloud,GCP
+Google Test,GT
+Gradle,
+Groovy,
+H2,
+HTML/CSS,HTML/CSS
+Hadoop,
+Haskell,
+Heroku,
+Hetzner,
+Homebrew,brew
+Htmx,
+Hugging Face Transformers,HF
+IBM Cloud Or Watson,IBM Cloud
+IBM DB2,DB2
+InfluxDB,
+Ionic,
+JAX,
+Java,
+JavaScript,JS
+Julia,
+Keras,
+Kotlin,Kt
+Ktor,
+Kubernetes,K8s
+LLVM's Clang,Clang
+Laravel,
+"Linode, now Akamai",LNA
+Lisp,
+Lua,
+MATLAB,ML
+MFC,
+MSBuild,
+MSVC,
+Make,
+Managed Hosting,MH
+MariaDB,
+Maven (build tool),MVN
+Meson,
+MicroPython,
+Micronaut,
+Microsoft Access,MA
+Microsoft Azure,Azure
+Microsoft SQL Server,MSSQL
+MongoDB,Mongo
+MySQL,
+Neo4J,
+NestJS,Nest
+Netlify,
+Next.js,Next
+Nim,
+Ninja,
+Nix,
+Node.js,Node
+NuGet,
+NumPy,np
+Nuxt.js,
+OCaml,
+OVH,
+Objective-C,ObjC
+OpenCL,CL
+OpenGL,GL
+OpenShift,
+OpenStack,
+Opencv,
+Oracle,
+Oracle Cloud Infrastructure (OCI),OCI
+PHP,PHP
+Pacman,
+Pandas,pd
+Perl,
+Phoenix,
+Pip,
+PlatformIO,
+Play Framework,PF
+Podman,
+PostgreSQL,PG
+PowerShell,
+Presto,
+Prolog,
+Pulumi,
+Puppet,
+Python,Py
+PythonAnywhere,
+QMake,
+Qt,
+Quarkus,
+R,R
+RabbitMQ,RMQ
+Rasberry Pi,RPi
+RavenDB,
+React,React
+React Native,RN
+Redis,
+Remix,
+Render,
+Roslyn,
+Ruby,
+Ruby on Rails,RoR
+Ruff,
+Rust,Rs
+SCons,
+SQL,
+SQLite,
+Scala,
+Scaleway,
+Scikit-Learn,sklearn
+Snowflake,SF
+Solid.js,
+Solidity,
+Solr,
+Spring Boot,SprBt
+Spring Framework,Spring
+Strapi,
+Supabase,
+Svelte,
+Swift,
+SwiftUI,
+Symfony,
+Tauri,
+TensorFlow,TF
+Terraform,TF
+TiDB,
+Tidyverse,
+Torch/PyTorch,PT
+TypeScript,TS
+Unity 3D,Unity
+Unreal Engine,UE
+VBA,
+VMware,VM
+Vercel,
+Visual Basic (.Net),VB.NET
+Visual Studio Solution,sln
+Vite,
+Vue.js,Vue
+Vultr,
+Webpack,
+WordPress,WP
+Xamarin,
+Yarn,
+Yii 2,
+ZMK,
+Zephyr,
+Zig,
+build2,
+cppunit,
+doctest,
+jQuery,$
+mlflow,
+npm,
+pnpm,
