@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch_geometric
 from torch_geometric.data import Data, HeteroData
-from torch_geometric.nn import GCNConv, GATConv, SAGEConv, Linear, HGTConv, GraphNorm, HeteroDictLinear
+from torch_geometric.nn import GCNConv, GATConv, SAGEConv, Linear, HGTConv, GraphNorm, HeteroDictLinear, HeteroConv, LayerNorm
 from torch_geometric.nn import TransformerConv, BatchNorm, to_hetero
 from torch_geometric.utils import add_self_loops
 import numpy as np
@@ -28,6 +28,8 @@ import os
 import time
 import traceback
 import warnings
+import torch.nn.functional as F
+
 warnings.filterwarnings('ignore')
 
 
@@ -638,3 +640,86 @@ class HGNNJobRecommender(nn.Module):
             'tech_demand': tech_demand,
             'tech_hotness': tech_hotness,
         }, h_dict
+
+
+class HeteroGNN(nn.Module):
+    def __init__(self, sbert_dim, hidden_channels, out_channels, num_layers, metadata, node_input_dims):
+        super().__init__()
+        self.out_channels = out_channels
+        self.dropout = nn.Dropout(0.3)
+
+        self.node_lins_initial = nn.ModuleDict()
+        self.node_layer_norms_initial = nn.ModuleDict()
+        for node_type in metadata[0]:
+            self.node_lins_initial[node_type] = Linear(
+                node_input_dims[node_type], hidden_channels)
+            self.node_layer_norms_initial[node_type] = LayerNorm(
+                hidden_channels)
+
+        self.convs = nn.ModuleList()
+        self.inter_lins_gnn = nn.ModuleList()
+
+        for i in range(num_layers):
+            conv_dict = {}
+            for src, rel, dst in metadata[1]:
+                is_bipartite = src != dst
+                conv_dict[(src, rel, dst)] = GATConv((-1, -1), hidden_channels, heads=2,
+                                                     concat=True, dropout=0.3, add_self_loops=(not is_bipartite))
+            self.convs.append(HeteroConv(conv_dict, aggr='sum'))
+
+            layer_inter_projection = nn.ModuleDict()
+            for node_type in metadata[0]:
+                layer_inter_projection[node_type] = Linear(
+                    hidden_channels * 2, hidden_channels)
+            self.inter_lins_gnn.append(layer_inter_projection)
+
+        self.job_final_projection = Linear(hidden_channels, out_channels)
+        self.query_final_projection = Linear(sbert_dim, out_channels)
+
+    def forward(self, x_dict_input, edge_index_dict, aggregated_query_sbert_embedding=None):
+        """
+        Forward function that can operate in two modes:
+        1. If aggregated_query_sbert_embedding is None: compute node embeddings for the entire graph
+        2. If aggregated_query_sbert_embedding is provided: compute job recommendation scores
+        """
+        if aggregated_query_sbert_embedding is None:
+            # Mode 1: Return all node embeddings
+            return self._compute_node_embeddings_dict(x_dict_input, edge_index_dict)
+        else:
+            # Mode 2: Return job scores for the given query embedding
+            all_node_embeddings = self._compute_node_embeddings_dict(
+                x_dict_input, edge_index_dict)
+            all_job_embeddings = all_node_embeddings['job']
+
+            # Project query embedding to the same space as job embeddings
+            projected_query_emb = self.project_query_embedding(
+                aggregated_query_sbert_embedding)
+
+            # Compute job scores directly (dot product)
+            job_scores = torch.matmul(
+                all_job_embeddings, projected_query_emb.unsqueeze(-1)).squeeze(-1)
+
+            return job_scores, all_job_embeddings, projected_query_emb
+
+    def _compute_node_embeddings_dict(self, x_dict_input, edge_index_dict):
+        """Compute embeddings for all nodes in the graph"""
+        x_dict = {}
+        for node_type, x_in in x_dict_input.items():
+            x = self.node_lins_initial[node_type](x_in)
+            x = self.node_layer_norms_initial[node_type](x)
+            x = self.dropout(F.relu(x))
+            x_dict[node_type] = x
+
+        for i, conv_layer in enumerate(self.convs):
+            x_dict_updates = conv_layer(x_dict, edge_index_dict)
+            for node_type, x_gat_output in x_dict_updates.items():
+                x_projected = self.inter_lins_gnn[i][node_type](x_gat_output)
+                x_dict[node_type] = self.dropout(F.relu(x_projected))
+
+        if 'job' in x_dict:
+            x_dict['job'] = self.job_final_projection(x_dict['job'])
+        return x_dict
+
+    def project_query_embedding(self, raw_aggregated_sbert_embedding):
+        """Project a raw SBERT embedding to the job embedding space"""
+        return self.query_final_projection(raw_aggregated_sbert_embedding)

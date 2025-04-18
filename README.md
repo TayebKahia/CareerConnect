@@ -1,7 +1,6 @@
 # CareerConnect 📌
 
-**Integrated Career Guidance & Recruitment Platform**  
-
+**Integrated Career Guidance & Recruitment Platform**
 
 ---
 
@@ -14,11 +13,13 @@ CareerConnect is an AI-powered platform designed to address the key challenges f
 ## 🚀 Problem Statements
 
 ### 🎯 For Job Seekers:
+
 - Difficulty in crafting standout resumes.
 - Limited interview preparation tools.
 - Time-consuming job search and skill matching.
 
 ### 🎯 For HR Professionals:
+
 - Manual and inefficient resume screening.
 - Time-intensive candidate selection.
 
@@ -27,19 +28,20 @@ CareerConnect is an AI-powered platform designed to address the key challenges f
 ## 💡 Solution Features
 
 ### ✅ Job Seeker Portal:
+
 - **AI-powered Resume Analysis**
 - **Personalized Job Recommendations**
 - **Tailored Interview Preparation Tools**
 
 ### ✅ HR Portal (Optional):
+
 - **Automated Bulk Resume Screening**
 - **Dashboard for Ranked Candidate Lists**
 - **Advanced Filtering & Sorting by Key Criteria**
 
-> 📝 *The HR Portal is optional and may be postponed to prioritize core features within the initial 3-month timeline.*
+> 📝 _The HR Portal is optional and may be postponed to prioritize core features within the initial 3-month timeline._
 
 ---
-
 
 ## 📈 Roadmap
 
@@ -51,11 +53,10 @@ CareerConnect is an AI-powered platform designed to address the key challenges f
 
 ## 📬 Contact
 
-**Author:** Kahia Tayeb  
-**Email:** t.kahia@esi-sba.dz  
-**Location:** Blida, Algeria
+**Author:** BOUFAFA Mohamed & KAHIA Tayeb
+**Emails:** m.boufafa@esi-sba.dz , t.kahia@esi-sba.dz
+**Location:** Algeria
 
 ---
 
-> *Empowering careers with AI — one connection at a time.*
-
+> _Empowering careers with AI — one connection at a time._
