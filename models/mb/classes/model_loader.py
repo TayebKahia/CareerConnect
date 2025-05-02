@@ -1,4 +1,4 @@
-from models.classes.hetero_gnn_recommendation import (
+from models.mb.classes.hetero_gnn_recommendation import (
     HeteroJobRecommendationSystem,
     HGNNJobRecommender
 )

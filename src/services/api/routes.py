@@ -8,8 +8,8 @@ from typing import Dict, Any, Tuple
 from src.config import DEFAULT_TOP_K, MAX_SEARCH_RESULTS, DEVICE
 from src.utils.helpers import debug_log, process_user_input, enhance_job_details_with_onet
 from src.utils.skill_processor import SkillProcessor
-from models.classes.gnn_model_cache import gnn_model_cache
-from models.classes.hetero_gnn_recommendation import HeteroGNN
+from models.mb.classes.gnn_model_cache import gnn_model_cache
+from models.mb.classes.hetero_gnn_recommendation import HeteroGNN
 
 # Import necessary libraries for new model
 import torch
