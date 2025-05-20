@@ -2,12 +2,16 @@ import uuid
 import time
 import json
 import os
+import base64
+import io
 from flask import jsonify, request
 from typing import Dict, Any, Tuple
+import traceback
 
 from src.config import DEFAULT_TOP_K, MAX_SEARCH_RESULTS, DEVICE
 from src.utils.helpers import debug_log, process_user_input, enhance_job_details_with_onet
 from src.utils.skill_processor import SkillProcessor
+import pypdfium2 as pdfium  # <<< IMPORT THIS
 from models.mb.classes.gnn_model_cache import gnn_model_cache
 from models.mb.classes.hetero_gnn_recommendation import HeteroGNN
 
@@ -234,9 +238,8 @@ def register_routes(app, model_manager):
 
         except Exception as e:
             debug_log(f"Error initializing new model: {str(e)}")
-            return False
+            return False    @ app.route('/', methods=['GET'])
 
-    @app.route('/', methods=['GET'])
     def index():
         """Root endpoint with API information"""
         return jsonify({
@@ -267,6 +270,12 @@ def register_routes(app, model_manager):
                         'text': 'I am a data scientist with expertise in Python, SQL, and machine learning...',
                         'top_n': 5
                     }
+                },                {
+                    'path': '/api/recommend-GNN-Onet-from-cv',
+                    'method': 'POST',
+                    'description': 'Get job recommendations from CV (PDF) using the newer model (best_model1.pth)',
+                    'notes': 'Accepts direct PDF file upload through multipart/form-data',
+                    'example_payload': 'Form data with file field named "file" and optional "top_n" parameter'
                 },
                 {
                     'path': '/api/skills',
@@ -500,7 +509,7 @@ def register_routes(app, model_manager):
             user_skills = []
             extracted_skill_names = set()
             for skill in filtered_skills:
-                if skill['similarity'] >= 0.5:  # Using the same threshold as original
+                if skill['similarity'] >= 0.8:  # Using the same threshold as original
                     name = skill['name']
                     skill_type = 'technology_name'  # Always use technology_name for consistency
                     weight = float(skill['similarity'])
@@ -595,7 +604,6 @@ def register_routes(app, model_manager):
             debug_log(
                 f"[{request_id}] ===== Completed Text-Based Recommendation Request (New Model) =====\n")
             return jsonify(response)
-
         except Exception as e:
             debug_log(
                 f"[{request_id}] ERROR in text-based recommendation (New Model): {str(e)}")
@@ -604,7 +612,310 @@ def register_routes(app, model_manager):
             return jsonify({
                 'status': 'error',
                 'request_id': request_id,
-                'message': f'Error processing request: {str(e)}'}), 500
+                'message': f'Error processing request: {str(e)}'}), 500    @ app.route('/api/recommend-GNN-Onet-from-cv', methods=['POST'])
+
+    @app.route('/api/recommend-GNN-Onet-from-cv', methods=['POST'])
+    def recommend_from_cv_new():
+        """Recommend jobs based on CV (PDF) using the new model"""
+        request_id = str(uuid.uuid4())[:8]
+        debug_log(
+            f"\n[{request_id}] ===== Starting CV-Based Recommendation Request (New Model) =====")
+
+        try:
+            # Initialize the model if not already initialized
+            if not initialize_new_model():
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Failed to initialize the new model'
+                }), 500
+
+            # Get top_n parameter from form or query parameters
+            top_n = DEFAULT_TOP_K
+            if 'top_n' in request.form:
+                top_n = int(request.form.get('top_n'))
+            elif 'top_n' in request.args:
+                top_n = int(request.args.get('top_n'))
+
+            debug_log(f"[{request_id}] Received CV upload request")
+
+            # Check if there's a file in the request
+            if 'file' not in request.files:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'No file uploaded. Please upload a PDF file using multipart/form-data with a field named "file".'
+                }), 400
+
+            # Get the uploaded file
+            # This is a FileStorage object
+            pdf_file_storage = request.files['file']
+
+            # Check if the file has a name and is a PDF
+            if pdf_file_storage.filename == '':
+                return jsonify({
+                    'status': 'error',
+                    'message': 'No file selected'
+                }), 400
+
+            if not pdf_file_storage.filename.lower().endswith('.pdf'):
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Uploaded file must be a PDF'
+                }), 400
+
+            debug_log(
+                f"[{request_id}] Processing uploaded CV: {pdf_file_storage.filename}")
+            try:
+                # --- MODIFICATION START: Use pypdfium2 ---
+                pdf_file_storage.seek(0)  # Ensure stream is at the beginning
+                # Load from FileStorage stream
+                pdf_doc = pdfium.PdfDocument(pdf_file_storage)
+
+                text_pages = []
+                for i in range(len(pdf_doc)):
+                    page = pdf_doc.get_page(i)
+                    textpage = page.get_textpage()
+                    # get_text_range() is good for extracting text with layout preservation
+                    text_pages.append(textpage.get_text_range())
+                    textpage.close()
+                    page.close()
+                # Join pages with a double newline
+                text = "\n\n".join(text_pages)
+                pdf_doc.close()
+                # --- MODIFICATION END ---
+
+                debug_log(
+                    f"[{request_id}] Successfully extracted {len(text)} characters from PDF using pypdfium2")
+
+                # Save extracted text to file for debugging
+                debug_output_dir = os.path.join('debug_output')
+                os.makedirs(debug_output_dir, exist_ok=True)
+
+                timestamp = time.strftime("%Y%m%d-%H%M%S")
+                safe_filename = ''.join(
+                    c if c.isalnum() else '_' for c in pdf_file_storage.filename)
+                output_filename = f"{safe_filename}_{timestamp}_{request_id}.txt"
+                output_filepath = os.path.join(
+                    debug_output_dir, output_filename)
+
+                with open(output_filepath, 'w', encoding='utf-8') as f:
+                    f.write(
+                        f"=== Extracted Text from {pdf_file_storage.filename} (using pypdfium2) ===\n\n")
+                    f.write(text)
+
+                debug_log(
+                    f"[{request_id}] Saved extracted text to {output_filepath}")
+
+                if not text.strip():  # Check if text is not just whitespace
+                    return jsonify({
+                        'status': 'error',
+                        'message': 'Could not extract text from PDF. The file may be empty, corrupted, password-protected, or contain only images.'
+                    }), 400
+            except pdfium.PdfiumError as pe:  # Catch pypdfium2 specific errors
+                debug_log(
+                    f"[{request_id}] Error extracting text from PDF with pypdfium2: {str(pe)}")
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Error processing PDF with pypdfium2: {str(pe)}'
+                }), 400
+            except Exception as e:
+                debug_log(
+                    f"[{request_id}] General error extracting text from PDF: {str(e)}")
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Error processing PDF: {str(e)}'
+                }), 400
+
+            # Process text and get recommendations (same logic as recommend_from_text_new)
+            # Increased preview
+            debug_log(f"[{request_id}] CV text preview: {text[:500]}...")
+            debug_log(f"[{request_id}] Top-N value: {top_n}")
+            debug_log(f"[{request_id}] Starting skill extraction...")
+
+            # Extract skills from text using the skill processor
+            filtered_skills = skill_processor.process_text(text)
+
+            debug_log(
+                f"\n[{request_id}] Extracted {len(filtered_skills)} skills from CV:")
+            if filtered_skills:
+                for idx, skill in enumerate(filtered_skills, 1):
+                    debug_log(f"[{request_id}] {idx}. {skill['name']}")
+                    debug_log(f"[{request_id}]    Type: {skill['type']}")
+                    debug_log(
+                        f"[{request_id}]    Similarity: {skill['similarity']:.3f}")
+            else:
+                debug_log(f"[{request_id}] No skills extracted.")
+
+            # Load ONET job data
+            onet_data_path = os.path.join(
+                'data', 'processed', 'abbr_cleaned_IT_data_from_onet.json')
+            try:
+                with open(onet_data_path, 'r') as f:
+                    onet_data = json.load(f)
+            except FileNotFoundError:
+                debug_log(
+                    f"[{request_id}] ONET data file not found at {onet_data_path}")
+                # Create a dummy onet_data if file not found for testing purposes
+                onet_data = [
+                    {"title": "Software Engineer", "technology_skills": [
+                        {"skill_title": "Programming Languages", "technologies": [
+                            {"name": "Python", "is_matched": False}]},
+                        {"skill_title": "Databases", "technologies": [
+                            {"name": "SQL", "is_matched": False}]}
+                    ]},
+                    {"title": "Data Analyst", "technology_skills": [
+                        {"skill_title": "Data Analysis Tools", "technologies": [
+                            {"name": "SQL", "is_matched": False}, {"name": "Excel", "is_matched": False}]}
+                    ]},
+                    {"title": "Database Administrator", "technology_skills": [
+                        {"skill_title": "Database Management", "technologies": [{"name": "SQL", "is_matched": False}, {
+                            "name": "PostgreSQL", "is_matched": False}, {"name": "AWS", "is_matched": False}]}
+                    ]}
+                ]
+                debug_log(
+                    f"[{request_id}] Using dummy ONET data as file was not found.")
+
+            # Create a lookup dictionary for O*NET data
+            onet_data_dict = {
+                job.get('title', ''): job for job in onet_data if 'title' in job}
+
+            # Convert extracted skills to the format expected by the new model
+            user_skills = []
+            extracted_skill_names = set()
+            for skill in filtered_skills:
+                if skill['similarity'] >= 0.8:  # Using the same threshold as original
+                    name = skill['name']
+                    skill_type = 'technology_name'  # Always use technology_name for consistency
+                    weight = float(skill['similarity'])
+                    user_skills.append((name, skill_type, weight))
+                    extracted_skill_names.add(name.lower())
+
+            debug_log(
+                f"[{request_id}] Processed {len(user_skills)} user skills from CV for new model")
+
+            if len(user_skills) == 0:
+                # Return empty recommendations if no skills meet criteria, rather than erroring out,
+                # unless you specifically want to prevent this.
+                debug_log(
+                    f"[{request_id}] No skills met the similarity threshold of 0.8 for model input.")
+                return jsonify({
+                    'status': 'success',  # Or 'warning'
+                    'request_id': request_id,
+                    'message': 'No skills extracted from the CV met the criteria for recommendation.',
+                    'recommendations': [],
+                    'total_recommendations': 0,
+                    'extracted_skills': filtered_skills,
+                    'total_skills': len(filtered_skills),
+                    'timestamp': time.time()
+                }), 200  # 200 OK, but with a message and empty results
+
+            # Predict jobs using the new model
+            debug_log(f"[{request_id}] Running prediction with new model...")
+
+            # Convert skills to format needed for model
+            skill_names_for_embedding = [s[0] for s in user_skills]
+            skill_weights = torch.tensor(
+                [s[2] for s in user_skills], dtype=torch.float, device=DEVICE).unsqueeze(1)
+
+            with torch.no_grad():
+                # Generate embeddings for skills using the cached model
+                raw_query_sbert_embeddings_list = gnn_model_cache.sentence_model.encode(
+                    skill_names_for_embedding, convert_to_tensor=True, device=DEVICE)
+
+                # Aggregate embeddings with weights
+                aggregated_raw_sbert_q_user_emb = None  # Initialize
+                if raw_query_sbert_embeddings_list.ndim == 1 and len(skill_names_for_embedding) == 1:
+                    aggregated_raw_sbert_q_user_emb = raw_query_sbert_embeddings_list
+                elif raw_query_sbert_embeddings_list.ndim > 1 and raw_query_sbert_embeddings_list.size(0) > 0:
+                    if skill_weights.numel() == raw_query_sbert_embeddings_list.size(0):
+                        weighted_embs = raw_query_sbert_embeddings_list * skill_weights
+                        aggregated_raw_sbert_q_user_emb = torch.sum(
+                            weighted_embs, dim=0) / (torch.sum(skill_weights) + 1e-9)
+                    # Fallback if weights don't match (should not happen if logic is correct)
+                    else:
+                        aggregated_raw_sbert_q_user_emb = torch.mean(
+                            raw_query_sbert_embeddings_list, dim=0)
+
+                if aggregated_raw_sbert_q_user_emb is None:
+                    debug_log(
+                        f"[{request_id}] ERROR: Aggregated SBERT embedding is None. Check skill processing.")
+                    return jsonify({
+                        'status': 'error',
+                        'message': 'Failed to generate user skill embedding.'
+                    }), 500
+
+                # Get job scores from model
+                job_scores, _, _ = gnn_model_cache.model(
+                    gnn_model_cache.data.x_dict,
+                    gnn_model_cache.data.edge_index_dict,
+                    aggregated_raw_sbert_q_user_emb
+                )
+
+                # Sort jobs by scores
+                ranked_scores, ranked_indices = torch.sort(
+                    job_scores, descending=True)
+
+                # Format results with full job data
+                results = []
+                for i in range(min(top_n, len(ranked_indices))):
+                    pred_job_id = ranked_indices[i].item()
+                    pred_job_title = gnn_model_cache.job_id_to_title_map.get(
+                        pred_job_id, f"Unknown Job ID: {pred_job_id}")
+                    raw_score = ranked_scores[i].item()
+
+                    # Get full job data from ONET
+                    # Use .copy() to avoid modifying original dict
+                    job_data = onet_data_dict.get(pred_job_title, {}).copy()
+
+                    # Add matching flags for skills and technologies
+                    if 'technology_skills' in job_data:
+                        # Iterate over a copy if modifying list structure, or ensure deep copies
+                        processed_tech_skills = []
+                        for tech_skill_orig in job_data['technology_skills']:
+                            tech_skill = tech_skill_orig.copy()  # Work on a copy
+                            tech_skill['is_skill_matched'] = tech_skill.get(
+                                'skill_title', '').lower() in extracted_skill_names
+
+                            if 'technologies' in tech_skill:
+                                processed_technologies = []
+                                for tech_orig in tech_skill['technologies']:
+                                    tech = tech_orig.copy()  # Work on a copy
+                                    tech['is_matched'] = tech.get(
+                                        'name', '').lower() in extracted_skill_names
+                                    processed_technologies.append(tech)
+                                tech_skill['technologies'] = processed_technologies
+                            processed_tech_skills.append(tech_skill)
+                        job_data['technology_skills'] = processed_tech_skills
+
+                    # Combine all data
+                    result = {
+                        "title": pred_job_title,
+                        "raw_score": float(raw_score),
+                        "job_data": job_data  # Full O*NET data for the job
+                    }
+                    results.append(result)
+
+            response = {
+                'status': 'success',
+                'request_id': request_id,
+                'recommendations': results,
+                'total_recommendations': len(results),
+                'extracted_skills': filtered_skills,
+                'total_skills': len(filtered_skills),
+                'timestamp': time.time()
+            }
+
+            debug_log(
+                f"[{request_id}] ===== Completed CV-Based Recommendation Request (New Model) =====\n")
+            return jsonify(response)
+        except Exception as e:
+            debug_log(
+                f"[{request_id}] ERROR in CV-based recommendation (New Model): {str(e)}\n{traceback.format_exc()}")
+            debug_log(
+                f"[{request_id}] ===== Failed CV-Based Recommendation Request (New Model) =====\n")
+            return jsonify({
+                'status': 'error',
+                'request_id': request_id,
+                'message': f'Error processing request: {str(e)}'}), 50
 
     @app.route('/api/skills', methods=['GET'])
     def get_available_skills():

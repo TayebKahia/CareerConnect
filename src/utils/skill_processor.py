@@ -68,7 +68,7 @@ class SkillProcessor:
         with open(concepts_path, "r", encoding="utf-8") as f:
             self.processed_concepts = json.load(f)
 
-    def process_text(self, text: str, threshold: float = 0.5) -> List[Dict[str, Any]]:
+    def process_text(self, text: str, threshold: float = 0.8) -> List[Dict[str, Any]]:
         """Process input text and return matched concepts with scores."""
         debug_log("Processing text input...")
         # Clean and tokenize text
