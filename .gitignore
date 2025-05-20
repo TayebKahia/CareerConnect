@@ -22,6 +22,9 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+rep.txt
+requirements_gnn.txt
+txt.md
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -89,8 +92,6 @@ target/
 # Exclude virtual environment
 .venv/
 
-# Exclude trained models
-/models/
 
 # exclude data from source control by default
 /data/external
