@@ -27,16 +27,12 @@ CareerConnect is an AI-powered platform designed to address the key challenges f
 ## 💡 Solution Features
 
 ### ✅ Job Seeker Portal:
-- **AI-powered Resume Analysis**
 - **Personalized Job Recommendations**
-- **Tailored Interview Preparation Tools**
 
-### ✅ HR Portal (Optional):
+### ✅ HR Portal:
 - **Automated Bulk Resume Screening**
 - **Dashboard for Ranked Candidate Lists**
-- **Advanced Filtering & Sorting by Key Criteria**
 
-> 📝 *The HR Portal is optional and may be postponed to prioritize core features within the initial 3-month timeline.*
 
 ---
 
