@@ -11,6 +11,7 @@ ONET_DATA_PATH = os.path.join(DATA_DIR, 'raw', 'onet_data.json')
 MODEL_PATH = os.path.join(BASE_DIR, 'models', 'hetero_gnn_job_model.pt')
 SYSTEM_PATH = os.path.join(BASE_DIR, 'models', 'processed_system.pkl')
 GRAPH_PATH = os.path.join(BASE_DIR, 'models', 'hetero_graph_data.pt')
+NEW_MODEL_PATH = os.path.join(BASE_DIR, 'models', 'best_model1.pth')
 
 # Model configuration
 HIDDEN_DIM = 256
