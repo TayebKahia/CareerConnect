@@ -46,11 +46,11 @@ def is_meaningful(phrase: str) -> bool:
 class SkillProcessor:
     def __init__(self, model_name: str = "sentence-transformers/msmarco-distilbert-base-v4"):
         self.model_name = model_name
+        # Go up from src/utils/ to project root, then 'models/mb'
         self.model = SentenceTransformer(model_name)
-
-        # Go up from src/utils/ to project root, then 'models'
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        data_dir = os.path.join(project_root, "models")
+        project_root = os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))))
+        data_dir = os.path.join(project_root, "models", "mb")
         debug_log(f"Loading data from directory: {data_dir}")
 
         # Load embeddings
