@@ -9,8 +9,14 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 DATA_PATH = os.path.join(DATA_DIR, 'processed', 'filtered_IT_data.json')
 ONET_DATA_PATH = os.path.join(DATA_DIR, 'raw', 'onet_data.json')
 MODEL_PATH = os.path.join(BASE_DIR, 'models', 'hetero_gnn_job_model.pt')
+<<<<<<< HEAD
 SYSTEM_PATH = os.path.join(BASE_DIR, 'models', 'processed_system.pkl')
 GRAPH_PATH = os.path.join(BASE_DIR, 'models', 'hetero_graph_data.pt')
+=======
+SYSTEM_PATH = os.path.join(BASE_DIR, 'models', 'mb', 'processed_system.pkl')
+GRAPH_PATH = os.path.join(BASE_DIR, 'models', 'mb', 'hetero_graph_data.pt')
+NEW_MODEL_PATH = os.path.join(BASE_DIR, 'models', 'mb', 'best_model1.pth')
+>>>>>>> moamed-branch
 
 # Model configuration
 HIDDEN_DIM = 256
@@ -23,4 +29,8 @@ DEFAULT_TOP_K = 5
 MAX_SEARCH_RESULTS = 20
 
 # Device configuration
+<<<<<<< HEAD
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+=======
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+>>>>>>> moamed-branch

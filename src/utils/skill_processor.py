@@ -46,11 +46,11 @@ def is_meaningful(phrase: str) -> bool:
 class SkillProcessor:
     def __init__(self, model_name: str = "sentence-transformers/msmarco-distilbert-base-v4"):
         self.model_name = model_name
+        # Go up from src/utils/ to project root, then 'models/mb'
         self.model = SentenceTransformer(model_name)
-
-        # Go up from src/utils/ to project root, then 'models'
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        data_dir = os.path.join(project_root, "models")
+        project_root = os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))))
+        data_dir = os.path.join(project_root, "models", "mb")
         debug_log(f"Loading data from directory: {data_dir}")
 
         # Load embeddings
@@ -68,7 +68,7 @@ class SkillProcessor:
         with open(concepts_path, "r", encoding="utf-8") as f:
             self.processed_concepts = json.load(f)
 
-    def process_text(self, text: str, threshold: float = 0.5) -> List[Dict[str, Any]]:
+    def process_text(self, text: str, threshold: float = 0.8) -> List[Dict[str, Any]]:
         """Process input text and return matched concepts with scores."""
         debug_log("Processing text input...")
         # Clean and tokenize text
