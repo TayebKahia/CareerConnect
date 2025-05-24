@@ -8,8 +8,7 @@ from typing import Dict, Any, Tuple
 from src.config import DEFAULT_TOP_K, MAX_SEARCH_RESULTS, DEVICE
 from src.utils.helpers import debug_log, process_user_input, enhance_job_details_with_onet
 from src.utils.skill_processor import SkillProcessor
-from src.modeling.models.hetero_gnn_recommendation import predict_job_titles_hetero
-from src.modeling.models.gnn_model_cache import gnn_model_cache
+from models.classes.gnn_model_cache import gnn_model_cache
 
 # Import necessary libraries for new model
 import torch
@@ -327,7 +326,7 @@ def register_routes(app, model_manager):
             'message': 'Job Recommendation API is running',
             'available_endpoints': [
                 {
-                    'path': '/api/recommend-new',
+                    'path': '/api/recommend-GNN-Onet',
                     'method': 'POST',
                     'description': 'Get job recommendations using the newer model (best_model1.pth)',
                     'example_payload': {
@@ -343,7 +342,7 @@ def register_routes(app, model_manager):
                     }
                 },
                 {
-                    'path': '/api/recommend-from-text-new',
+                    'path': '/api/recommend-GNN-Onet-from-text',
                     'method': 'POST',
                     'description': 'Get job recommendations from text description using the newer model (best_model1.pth)',
                     'example_payload': {
@@ -368,7 +367,7 @@ def register_routes(app, model_manager):
             ]
         })
 
-    @app.route('/api/recommend-new', methods=['POST'])
+    @app.route('/api/recommend-GNN-Onet', methods=['POST'])
     def recommend_jobs_new():
         """Recommend jobs based on skills and technologies using the new model"""
         request_id = str(uuid.uuid4())[:8]
@@ -516,7 +515,7 @@ def register_routes(app, model_manager):
                 'message': f'Error processing request: {str(e)}'
             }), 500
 
-    @app.route('/api/recommend-from-text-new', methods=['POST'])
+    @app.route('/api/recommend-GNN-Onet-from-text', methods=['POST'])
     def recommend_from_text_new():
         """Recommend jobs based on text description using the new model"""
         request_id = str(uuid.uuid4())[:8]

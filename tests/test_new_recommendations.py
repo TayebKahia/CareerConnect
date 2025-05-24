@@ -7,8 +7,8 @@ import time
 
 
 def test_recommend_new_endpoint():
-    """Test the /api/recommend-new endpoint"""
-    url = "http://localhost:5000/api/recommend-new"
+    """Test the /api/recommend-GNN-Onet endpoint"""
+    url = "http://localhost:5000/api/recommend-GNN-Onet"
 
     # Test payload with the new format
     payload = {
