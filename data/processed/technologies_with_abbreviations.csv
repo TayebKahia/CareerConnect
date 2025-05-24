@@ -233,7 +233,7 @@ Zig,
 build2,
 cppunit,
 doctest,
-jQuery,$
+jQuery,
 mlflow,
 npm,
 pnpm,
