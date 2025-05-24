@@ -155,7 +155,7 @@ class ConceptMatcher(metaclass=Singleton):
         # Check notebooks directory with absolute path
         filename_notebook = os.path.join(
             project_root,
-            "notebooks/t.k",
+            "notebooks/tk",
             f"stack_concept_embeddings_{self.model_name.replace('/', '_')}.npy",
         )
 

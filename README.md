@@ -45,6 +45,54 @@ CareerConnect is an AI-powered platform designed to address the key challenges f
 
 ---
 
+## 🧪 Testing the Dual Ensemble Model
+
+The Dual Ensemble model combines ML and NN approaches (without GNN) for more efficient job role prediction. Follow these steps to test it:
+
+### 1. Installation Requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Test Prediction with Sample Text
+
+```bash
+python -m src.modeling.predict_job_role_dual --text "I am a software developer with experience in Python, JavaScript, and React. I have worked with MongoDB and AWS for cloud deployments."
+```
+
+### 3. Test with a File of Technologies
+
+Create a text file with one technology per line:
+```
+Python
+JavaScript
+React
+MongoDB
+AWS
+```
+
+Then run:
+```bash
+python -m src.modeling.predict_job_role_dual --tech-file path/to/your/technologies.txt
+```
+
+### 4. Running Tests
+
+```bash
+python -m unittest tests.test_dual_ensemble
+```
+
+### 5. Training a New Model
+
+To train a new dual ensemble model from scratch:
+
+```bash
+python -m src.modeling.train_dual_ensemble
+```
+
+---
+
 ## 📬 Contact
 
 **Author:** Kahia Tayeb  
