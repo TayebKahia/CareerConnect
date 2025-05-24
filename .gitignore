@@ -97,4 +97,6 @@ target/
 /data/external
 /data/interim
 
-/memory-bank"models/processed_system.pkl" 
+/memory-bank
+
+models/mb/processed_system.pkl
