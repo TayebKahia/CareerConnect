@@ -100,3 +100,4 @@ target/
 /memory-bank
 
 models/mb/processed_system.pkl
+models/processed_system.pkl
