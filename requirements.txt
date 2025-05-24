@@ -9,4 +9,5 @@ requests>=2.31.0
 sentence-transformers
 nltk
 scikit-learn
+uvicorn[standard]
 numpy

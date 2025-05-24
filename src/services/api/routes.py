@@ -107,12 +107,11 @@ class HeteroGNN(nn.Module):
 
 def register_routes(app, model_manager):
     # Initialize skill processor
-    skill_processor = SkillProcessor()    # Initialize the new model
+    skill_processor = SkillProcessor()
 
     def initialize_new_model():
         # First try loading from the cache
         if gnn_model_cache.load_cache():
-            debug_log("Loaded model data from cache successfully")
             return True
 
         # If cache loading fails, build from scratch
@@ -328,44 +327,21 @@ def register_routes(app, model_manager):
             'message': 'Job Recommendation API is running',
             'available_endpoints': [
                 {
-                    'path': '/api/recommend',
+                    'path': '/api/recommend-new',
                     'method': 'POST',
-                    'description': 'Get job recommendations based on skills and technologies',
+                    'description': 'Get job recommendations using the newer model (best_model1.pth)',
                     'example_payload': {
                         'skills': [
                             {'name': 'Python', 'type': 'technology',
                                 'similarity': 1.0},
                             {'name': 'Machine learning',
-                                'type': 'skill', 'similarity': 0.95},
-                            {'name': 'Data analysis',
-                                'type': 'skill', 'similarity': 1.0}
+                                'type': 'technology', 'similarity': 0.95},
+                            {'name': 'Structured query language (SQL)',
+                                'type': 'technology', 'similarity': 0.85}
                         ],
-                        'top_k': 5
+                        'top_n': 5
                     }
                 },
-                {
-                    'path': '/api/recommend-from-text',
-                    'method': 'POST',
-                    'description': 'Get job recommendations from text description',
-                    'example_payload': {
-                        'text': 'I am a data scientist with expertise in Python, SQL, and machine learning...',
-                        'top_k': 5
-                    }
-                },                {'path': '/api/recommend-new',
-                                   'method': 'POST',
-                                   'description': 'Get job recommendations using the newer model (best_model1.pth)',
-                                   'example_payload': {
-                                       'skills': [
-                                           {'name': 'Python', 'type': 'technology',
-                                            'similarity': 1.0},
-                                           {'name': 'Machine learning',
-                                            'type': 'technology', 'similarity': 0.95},
-                                           {'name': 'Structured query language (SQL)',
-                                            'type': 'technology', 'similarity': 0.85}
-                                       ],
-                                       'top_n': 5
-                                   }
-                                   },
                 {
                     'path': '/api/recommend-from-text-new',
                     'method': 'POST',
@@ -391,249 +367,6 @@ def register_routes(app, model_manager):
                 }
             ]
         })
-
-    @app.route('/api/recommend', methods=['POST'])
-    def recommend_jobs():
-        """Recommend jobs based on user skills and technologies"""
-        request_id = str(uuid.uuid4())[:8]
-        debug_log(
-            f"\n[{request_id}] ===== Starting New Job Recommendation Request =====")
-
-        try:
-            # Parse request data
-            if request.content_type and 'application/json' in request.content_type:
-                data = request.get_json(force=True, silent=True)
-            else:
-                try:
-                    data = json.loads(request.data.decode('utf-8'))
-                except:
-                    data = None
-
-            debug_log(
-                f"[{request_id}] Received request data: {json.dumps(data, indent=2)}")
-
-            if not data or 'skills' not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Missing required field: skills'
-                }), 400
-
-            # Process request
-            normalized_skills = [
-                {
-                    'name': skill['name'],
-                    'type': 'technology_name',  # Always use technology_name for consistency
-                    'similarity': skill.get('similarity', 1.0)
-                }
-                for skill in data['skills']
-            ]
-            user_skills = process_user_input(normalized_skills)
-            top_k = int(data.get('top_k', DEFAULT_TOP_K))
-
-            debug_log(
-                f"[{request_id}] Processed {len(user_skills)} user skills")
-            debug_log(f"[{request_id}] Top-K value: {top_k}")
-            for skill in user_skills:
-                name, type_, score = skill
-                debug_log(
-                    f"[{request_id}] - Skill: {name} | Type: {type_} | Score: {score:.2f}")
-
-            if len(user_skills) == 0:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'No valid skills provided'
-                }), 400
-
-            debug_log(f"[{request_id}] Calling job prediction model...")
-            # Get job recommendations
-            top_jobs, job_details = predict_job_titles_hetero(
-                model_manager.model,
-                model_manager.hetero_data,
-                model_manager.system,
-                user_skills,
-                top_k=top_k
-            )
-
-            debug_log(
-                f"[{request_id}] Received {len(top_jobs)} job predictions")
-
-            # Format results
-            results = []
-            for job_title, confidence in top_jobs:
-                debug_log(
-                    f"[{request_id}] Processing job: {job_title} (confidence: {confidence:.3f})")
-                details = job_details[job_title]
-                enhanced_job = enhance_job_details_with_onet(
-                    job_title,
-                    details,
-                    user_skills,
-                    model_manager.original_job_data,
-                    model_manager.onet_job_mapping
-                )
-
-                if enhanced_job:
-                    enhanced_job['confidence'] = float(confidence)
-                    results.append(enhanced_job)
-                    debug_log(
-                        f"[{request_id}] - Enhanced job details: {len(enhanced_job.get('required_skills', []))} required skills, {len(enhanced_job.get('matching_skills', []))} matching skills")
-
-            debug_log(
-                f"[{request_id}] ===== Completed Job Recommendation Request =====\n")
-            return jsonify({
-                'status': 'success',
-                'request_id': request_id,
-                'recommendations': results,
-                'total_recommendations': len(results),
-                'timestamp': time.time()
-            })
-
-        except Exception as e:
-            debug_log(f"[{request_id}] ERROR in recommendation: {str(e)}")
-            debug_log(
-                f"[{request_id}] ===== Failed Job Recommendation Request =====\n")
-            return jsonify({
-                'status': 'error',
-                'request_id': request_id,
-                'message': f'Error processing request: {str(e)}'
-            }), 500
-
-    @app.route('/api/recommend-from-text', methods=['POST'])
-    def recommend_from_text():
-        """Recommend jobs based on text description"""
-        request_id = str(uuid.uuid4())[:8]
-        debug_log(
-            f"\n[{request_id}] ===== Starting New Text-Based Recommendation Request =====")
-
-        try:
-            # Parse request data
-            if request.content_type and 'application/json' in request.content_type:
-                data = request.get_json(force=True, silent=True)
-            else:
-                try:
-                    data = json.loads(request.data.decode('utf-8'))
-                except:
-                    data = None
-
-            debug_log(
-                f"[{request_id}] Received request data: {json.dumps(data, indent=2)}")
-
-            if not data or 'text' not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Missing required field: text'
-                }), 400
-
-            # Process text and get recommendations
-            text = data['text']
-            top_k = int(data.get('top_k', DEFAULT_TOP_K))
-
-            debug_log(
-                f"[{request_id}] Input text length: {len(text)} characters")
-            debug_log(f"[{request_id}] Text preview: {text[:200]}...")
-            debug_log(f"[{request_id}] Top-K value: {top_k}")
-
-            # Extract skills from text
-            debug_log(f"[{request_id}] Starting skill extraction...")
-            filtered_skills = skill_processor.process_text(text)
-
-            debug_log(
-                f"\n[{request_id}] Extracted {len(filtered_skills)} skills:")
-            for idx, skill in enumerate(filtered_skills, 1):
-                debug_log(f"[{request_id}] {idx}. {skill['name']}")
-                debug_log(f"[{request_id}]    Type: {skill['type']}")
-                debug_log(
-                    f"[{request_id}]    Similarity: {skill['similarity']:.3f}")
-
-            # Format skills for recommendation
-            skills_for_recommendation = [
-                {
-                    'name': skill['name'],
-                    'type': 'technology_name',  # Always use technology_name for consistency
-                    'similarity': skill['similarity']
-                }
-                for skill in filtered_skills
-                # Match the threshold used in /recommend
-                if skill['similarity'] >= 0.5
-            ]
-
-            debug_log(f"\n[{request_id}] Formatted skills for recommendation:")
-            for skill in skills_for_recommendation:
-                debug_log(
-                    f"[{request_id}] - {skill['name']} ({skill['type']}): {skill['similarity']:.3f}")
-
-            # Process request using the same helper as /recommend
-            user_skills = process_user_input(skills_for_recommendation)
-            debug_log(
-                f"[{request_id}] Processed {len(user_skills)} skills through process_user_input")
-
-            debug_log(f"\n[{request_id}] Calling job prediction model...")
-            # Get recommendations using the same logic as /api/recommend
-            top_jobs, job_details = predict_job_titles_hetero(
-                model_manager.model,
-                model_manager.hetero_data,
-                model_manager.system,
-                user_skills,  # Use processed skills
-                top_k=top_k
-            )
-
-            debug_log(
-                f"[{request_id}] Received {len(top_jobs)} job predictions")
-
-            # Format results
-            results = []
-            debug_log(f"\n[{request_id}] Processing job recommendations:")
-            for job_title, confidence in top_jobs:
-                debug_log(f"[{request_id}] Processing job: {job_title}")
-                debug_log(f"[{request_id}] - Confidence: {confidence:.3f}")
-
-                details = job_details[job_title]
-                enhanced_job = enhance_job_details_with_onet(
-                    job_title,
-                    details,
-                    user_skills,  # Use processed skills here too, just like in /recommend
-                    model_manager.original_job_data,
-                    model_manager.onet_job_mapping
-                )
-
-                if enhanced_job:
-                    enhanced_job['confidence'] = float(confidence)
-                    results.append(enhanced_job)
-                    debug_log(f"[{request_id}] - Enhanced job details:")
-                    debug_log(
-                        f"[{request_id}]   * Required skills: {len(enhanced_job.get('required_skills', []))}")
-                    debug_log(
-                        f"[{request_id}]   * Matching skills: {len(enhanced_job.get('matching_skills', []))}")
-                    debug_log(
-                        f"[{request_id}]   * Description length: {len(enhanced_job.get('description', ''))}")
-
-            response = {
-                'status': 'success',
-                'request_id': request_id,
-                'recommendations': results,
-                'total_recommendations': len(results),
-                'extracted_skills': filtered_skills,
-                'total_skills': len(filtered_skills),
-                'timestamp': time.time()
-            }
-
-            debug_log(f"\n[{request_id}] Response summary:")
-            debug_log(
-                f"[{request_id}] - Total recommendations: {len(results)}")
-            debug_log(
-                f"[{request_id}] - Total extracted skills: {len(filtered_skills)}")
-            debug_log(
-                f"[{request_id}] ===== Completed Text-Based Recommendation Request =====\n")
-            return jsonify(response)
-
-        except Exception as e:
-            debug_log(
-                f"[{request_id}] ERROR in text-based recommendation: {str(e)}")
-            debug_log(
-                f"[{request_id}] ===== Failed Text-Based Recommendation Request =====\n")
-            return jsonify({
-                'status': 'error',
-                'request_id': request_id,
-                'message': f'Error processing request: {str(e)}'}), 500
 
     @app.route('/api/recommend-new', methods=['POST'])
     def recommend_jobs_new():
@@ -823,7 +556,7 @@ def register_routes(app, model_manager):
             debug_log(
                 f"[{request_id}] Input text length: {len(text)} characters")
             debug_log(f"[{request_id}] Text preview: {text[:200]}...")
-            # Extract skills from text using the same skill processor as original endpoint
+            # Extract skills from text using the same skill processor as original
             debug_log(f"[{request_id}] Top-N value: {top_n}")
             debug_log(f"[{request_id}] Starting skill extraction...")
             filtered_skills = skill_processor.process_text(text)

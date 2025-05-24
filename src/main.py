@@ -35,9 +35,8 @@ def main():
     app = create_app()
 
     # Run with reduced reloader and no static file changes detection
-    app.run(debug=True, host='0.0.0.0', port=5000,
-            use_reloader=True,  # Set to False to disable hot reload
-            extra_files=None)  # Disable watching for file changes
+    # Disable watching for file changes
+    app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
 
 
 if __name__ == '__main__':
