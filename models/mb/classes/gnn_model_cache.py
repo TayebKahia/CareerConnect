@@ -6,6 +6,7 @@ import json
 import torch
 import pickle
 import numpy as np
+import time  # Added time module
 from sentence_transformers import SentenceTransformer
 from typing import Dict, Any, Optional
 
@@ -58,6 +59,14 @@ class GNNModelCache:
         self.job_id_to_title_map = {}
         self.tech_map = {}
         self.job_titles = []
+        self.last_load_times = {
+            'graph_load': None,
+            'mappings_load': None,
+            'model_creation': None,
+            'model_load': None,
+            'sentence_model_load': None,
+            'total_load': None
+        }
         self._initialized = True
 
     def save_cache(self, data, mappings):
@@ -83,7 +92,13 @@ class GNNModelCache:
         """
         Load data from cache files
         """
+        # If model is already initialized, just return
+        if self.model is not None:
+            debug_log("Model already initialized, using existing instance")
+            return True
+
         try:
+            start_time = time.time()
             # Check if cache files exist
             if not os.path.exists(GRAPH_CACHE_PATH) or not os.path.exists(MAPPINGS_CACHE_PATH):
                 debug_log("Cache files don't exist")
@@ -110,10 +125,9 @@ class GNNModelCache:
                 self.job_id_to_title_map = mappings['job_id_to_title_map']
                 self.tech_map = mappings['tech_map']
                 self.job_titles = mappings['job_titles']
-            debug_log(f"Loaded mappings cache from {MAPPINGS_CACHE_PATH}")
-
             # Load model
-            from src.services.api.routes import HeteroGNN
+            debug_log(f"Loaded mappings cache from {MAPPINGS_CACHE_PATH}")
+            from models.mb.classes.hetero_gnn_recommendation import HeteroGNN
 
             # Get graph metadata and dimensions
             hidden_channels = 128
@@ -141,12 +155,17 @@ class GNNModelCache:
                 NEW_MODEL_PATH, map_location=DEVICE))
             self.model.to(DEVICE)
             self.model.eval()
+            # Load sentence transformer (only if we need to)
             debug_log("Loaded and initialized model")
+            if self.sentence_model is None:
+                debug_log("Loading sentence transformer model...")
+                self.sentence_model = SentenceTransformer(
+                    SENTENCE_MODEL_NAME, device=DEVICE)
+                debug_log("Loaded sentence transformer model")
 
-            # Load sentence transformer
-            self.sentence_model = SentenceTransformer(
-                SENTENCE_MODEL_NAME, device=DEVICE)
-            debug_log("Loaded sentence transformer model")
+            end_time = time.time()
+            debug_log(
+                f"Model initialization and cache loading completed in {end_time - start_time:.2f} seconds")
 
             return True
         except Exception as e:
