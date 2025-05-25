@@ -8,11 +8,14 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import time
 
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if project_root not in sys.path:
-    sys.path.append(project_root)
+# Add parent directory to sys.path
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
 
-from src.modeling.predict_dual import get_predictor
+# Use the dual ensemble predictor
+from modeling.predict_dual import get_predictor
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Job Role Prediction API (Dual Ensemble)",

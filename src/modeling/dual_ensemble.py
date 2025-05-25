@@ -90,16 +90,9 @@ class DualEnsembleClassifier:
         Args:
             concept_matcher_path: Path to ConceptMatcher resources
         """
-        # Set default path if not provided
+        # Always use the correct data path from project root
         if concept_matcher_path is None:
-            # Handle the case when running from src/modeling directory
-            default_path = os.path.join(DATA_PROCESSED_DIR, 'technologies_with_abbreviations.csv')
-            if not os.path.exists(default_path):
-                # Try alternate path when running from within modeling directory
-                project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                default_path = os.path.join(project_root, 'data', 'processed', 'technologies_with_abbreviations.csv')
-            concept_matcher_path = default_path
-            
+            concept_matcher_path = os.path.join(PROJECT_ROOT, 'data', 'processed', 'technologies_with_abbreviations.csv')
         print(f"Loading concept matcher from: {concept_matcher_path}")
         
         # Initialize ConceptMatcher

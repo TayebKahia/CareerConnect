@@ -37,7 +37,7 @@ class ConceptMatcher(metaclass=Singleton):
         model_name="sentence-transformers/msmarco-distilbert-base-v4",
         similarity_threshold_graph=0.7,
         ngram_threshold=0.7,
-        filter_similarity_threshold=0.95,
+        filter_similarity_threshold=0.90,
     ):
         if columns is None:
             columns = [

@@ -15,7 +15,7 @@ from modeling.dual_ensemble import DualEnsembleClassifier
 from features import ConceptMatcher
 
 # Define project root and paths
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODEL_DIR = os.path.join(PROJECT_ROOT, 'models')
 DATA_PROCESSED_DIR = os.path.join(PROJECT_ROOT, 'data', 'processed')
 
