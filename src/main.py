@@ -1,5 +1,6 @@
 from flask import Flask
 import torch
+from flask_cors import CORS
 
 from models.mb.classes.model_loader import ModelManager
 from src.services.api.routes import register_routes
@@ -14,7 +15,7 @@ def create_app():
 
     # Initialize Flask app
     app = Flask(__name__)
-
+    CORS(app)
     # Initialize model manager
     model_manager = ModelManager()
     success = model_manager.initialize_model()

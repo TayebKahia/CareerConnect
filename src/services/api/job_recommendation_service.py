@@ -664,7 +664,7 @@ class JobRecommendationService:
 
         # Extract original matchScores
         match_scores = [result['matchScore'] for result in results]
-        # avoid division by zero
+        # Avoid division by zero
         max_score = max(match_scores) if match_scores else 1
 
         enhanced_results = []
@@ -683,18 +683,20 @@ class JobRecommendationService:
                             tech['is_matched'] = tech['name'].lower(
                             ) in extracted_skill_names
 
-            # Normalize and scale matchScore (0–80)
+            # Normalize and scale matchScore (to a max of ~80)
             raw_score = result['matchScore']
-            execeed = random.uniform(78, 84)
+            # allows slight variation around 80
+            scale_cap = random.uniform(78, 84)
+            normalized_score = (raw_score / max_score) * scale_cap
 
-            normalized_score = (raw_score / max_score) * execeed
+            # Get salary from job_data or use a default fallback
+            salary = job_data.get("salary", 100000)
 
             enhanced_result = {
                 "title": job_title,
-                # Rounded for readability
                 "matchScore": round(normalized_score, 2),
                 "keySkills": filtered_skills,
-                "salary": "100000$",
+                "salary": f"{salary}$",  # optional formatting as string
                 # "job_data": job_data
             }
 
