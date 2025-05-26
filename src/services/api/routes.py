@@ -287,8 +287,7 @@ def register_routes(app, model_manager):
             
             # Load salary data
             salary_data, salary_data_lower = load_salary_data()
-            
-            # Format the response
+              # Format the response
             formatted_results = []
             for pred in result["ensemble_predictions"]:
                 job_title = pred['role']
@@ -305,7 +304,8 @@ def register_routes(app, model_manager):
             processing_time = time.time() - start_time
             debug_log(f"Processed text in {processing_time:.2f} seconds")
             
-            return jsonify(formatted_results)
+            # Wrap formatted results in a recommendations object
+            return jsonify({"recommendations": formatted_results})
             
         except Exception as e:
             debug_log(f"Error in predict_from_text: {str(e)}")
@@ -366,8 +366,7 @@ def register_routes(app, model_manager):
                 
             # Load salary data
             salary_data, salary_data_lower = load_salary_data()
-            
-            # Format the response
+              # Format the response
             formatted_results = []
             for pred in result["ensemble_predictions"]:
                 job_title = pred['role']
@@ -384,7 +383,8 @@ def register_routes(app, model_manager):
             processing_time = time.time() - start_time
             debug_log(f"[{request_id}] Processed CV in {processing_time:.2f} seconds")
             
-            return jsonify(formatted_results)
+            # Wrap formatted results in a recommendations object
+            return jsonify({"recommendations": formatted_results})
             
         except Exception as e:
             debug_log(f"Error in predict_from_cv: {str(e)}")
@@ -392,67 +392,6 @@ def register_routes(app, model_manager):
                 'status': 'error',
                 'message': f'An error occurred: {str(e)}'
             }), 500
-
-    @app.route('/api/predict/technologies', methods=['POST'])
-    def predict_from_technologies():
-        """Predict job roles from a list of technologies.
-        
-        Returns the top predictions with salary information.
-        """
-        start_time = time.time()
-        try:
-            # Parse request data
-            if request.content_type and 'application/json' in request.content_type:
-                data = request.get_json(force=True, silent=True)
-            else:
-                try:
-                    data = json.loads(request.data.decode('utf-8'))
-                except:
-                    return jsonify({
-                        "status": "error",
-                        "message": "Invalid JSON data"
-                    }), 400
-            
-            if not data or 'technologies' not in data:
-                return jsonify({
-                    "status": "error",
-                    "message": "Missing required field: technologies"
-                }), 400
-                
-            top_k = data.get('top_k', 3)
-            
-            # Get predictor and make prediction
-            predictor = get_predictor()
-            result = predictor.predict_from_technologies(data['technologies'], top_k=top_k)
-            
-            # Load salary data
-            salary_data, salary_data_lower = load_salary_data()
-            
-            # Format the response
-            formatted_results = []
-            for pred in result["ensemble_predictions"]:
-                job_title = pred['role']
-                # Find salary for this job title or use a default value
-                salary = get_salary_for_job(job_title, salary_data, salary_data_lower)
-                
-                formatted_results.append({
-                    "title": job_title,
-                    "matchScore": round(pred['probability'] * 100, 2),  # Convert to percentage (0-100)
-                    "keySkills": result["extracted_technologies"] if "extracted_technologies" in result else data['technologies'],
-                    "salary": salary
-                })
-            
-            processing_time = time.time() - start_time
-            debug_log(f"Processed technologies in {processing_time:.2f} seconds")
-            
-            return jsonify(formatted_results)
-            
-        except Exception as e:
-            debug_log(f"Error in predict_from_technologies: {str(e)}")
-            return jsonify({
-                "status": "error",
-                "message": str(e)
-            }), 500
-    
+ 
     # Return the app with registered routes
     return app
