@@ -154,7 +154,7 @@ def register_routes(app, model_manager):
             }), 400
 
         # Get top_n parameter from form or query parameters
-        top_n = DEFAULT_TOP_K
+        top_k = DEFAULT_TOP_K
         if 'top_k' in request.form:
             top_k = int(request.form.get('top_k'))
         elif 'top_k' in request.args:
