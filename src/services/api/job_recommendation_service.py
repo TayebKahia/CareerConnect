@@ -408,7 +408,6 @@ class JobRecommendationService:
                 'request_id': request_id,
                 'recommendations': enhanced_results,
                 'total_recommendations': len(enhanced_results),
-                'extracted_skills': filtered_skills,
                 'total_skills': len(filtered_skills),
                 'timestamp': time.time()
             }
@@ -542,7 +541,6 @@ class JobRecommendationService:
                 'request_id': request_id,
                 'recommendations': enhanced_results,
                 'total_recommendations': len(enhanced_results),
-                'extracted_skills': filtered_skills,
                 'total_skills': len(filtered_skills),
                 'timestamp': time.time()
             }
@@ -657,47 +655,51 @@ class JobRecommendationService:
 
     def _enhance_results_with_onet(self, results, onet_data, extracted_skill_names, filtered_skills):
         """Enhance recommendation results with ONET job data"""
-        # Create a lookup dictionary for O*NET data
         onet_data_dict = {
             job.get('title', ''): job for job in onet_data if 'title' in job
         }
 
-        # Extract original matchScores
         match_scores = [result['matchScore'] for result in results]
-        # Avoid division by zero
         max_score = max(match_scores) if match_scores else 1
 
         enhanced_results = []
+
         for result in results:
             job_title = result['title']
             job_data = onet_data_dict.get(job_title, {})
 
-            # Add matching flags for skills and technologies
+            all_required_skills = set()
+            missing_skills = set()
+
             if 'technology_skills' in job_data:
                 for tech_skill in job_data['technology_skills']:
-                    tech_skill['is_skill_matched'] = tech_skill['skill_title'].lower(
-                    ) in extracted_skill_names
+                    skill_title = tech_skill['skill_title'].lower()
+                    all_required_skills.add(skill_title)
+                    tech_skill['is_skill_matched'] = skill_title in extracted_skill_names
 
                     if 'technologies' in tech_skill:
                         for tech in tech_skill['technologies']:
-                            tech['is_matched'] = tech['name'].lower(
-                            ) in extracted_skill_names
+                            tech_name = tech['name'].lower()
+                            all_required_skills.add(tech_name)
+                            tech['is_matched'] = tech_name in extracted_skill_names
 
-            # Normalize and scale matchScore (to a max of ~80)
+            # Identify missing skills
+            missing_skills = all_required_skills - extracted_skill_names
+
+            # Normalize score
             raw_score = result['matchScore']
-            # allows slight variation around 80
             scale_cap = random.uniform(78, 84)
             normalized_score = (raw_score / max_score) * scale_cap
 
-            # Get salary from job_data or use a default fallback
+            # Get salary
             salary = job_data.get("salary", 100000)
 
             enhanced_result = {
                 "title": job_title,
                 "matchScore": round(normalized_score, 2),
                 "keySkills": filtered_skills,
-                "salary": f"{salary}$",  # optional formatting as string
-                # "job_data": job_data
+                "missingSkills": sorted(missing_skills),
+                "salary": f"{salary}$"
             }
 
             enhanced_results.append(enhanced_result)
