@@ -25,6 +25,9 @@ var/
 rep.txt
 requirements_gnn.txt
 txt.md
+rep.txt
+requirements_gnn.txt
+txt.md
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -96,5 +99,8 @@ target/
 # exclude data from source control by default
 /data/external
 /data/interim
-
 /memory-bank
+
+/DATA_BASE
+/debug_output
+/docs

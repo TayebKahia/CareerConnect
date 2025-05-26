@@ -1,0 +1,26 @@
+=== Extracted Text from zinoumoh.pdf ===
+
+Liam Nkosi
+Detail-oriented Junior Database Administrator with a strong foundation in database management and a passion for 
+data integrity. Skilled in optimizing database performance and ensuring data security, with hands-on experience in 
+SQL and database design.
+Johannesburg, South Africa liam.nkosi@example.com +27 21 123 4567
+himalayas.app/@liamnkosi
+EXPERIENCE
+Feb 2022 - Present JUNIOR DATABASE ADMINISTRATOR, DataSolutions | Johannesburg, South Africa
+• Assisted in the management of over 10 databases with a focus on performance tuning 
+and security.
+• Implemented backup and recovery strategies, ensuring 99.9% data availability.
+• Collaborated with developers to optimize SQL queries, improving data retrieval speed 
+by 20%.
+Jun 2021 - Jan 2022 DATABASE INTERN, TechSavvy | Cape Town, South Africa
+• Supported the database administration team in daily operations and maintenance tasks.
+• Assisted in data migration projects, resulting in a 30% reduction in processing time.
+• Conducted data quality assessments and generated reports for management.
+EDUCATION
+2018 - 2021 B.SC. COMPUTER SCIENCE, University of Cape Town
+Focused on database systems, data structures, and software engineering principles. 
+Completed projects on database optimization and data integrity.
+SKILLS
+SQL Linux AWS Azure Apache Apache Spark PostgreSQL MySQL PostgreSQL Azure Database For PostgreSQL
+Hadoop

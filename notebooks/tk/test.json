@@ -1,0 +1,94 @@
+sample_texts = {
+    "frontend_developer": """I have 4 years of experience in web development, with a focus on building user interfaces.
+    My primary technologies include JavaScript, TypeScript, React, Vue.js, and CSS/SASS.
+    I've also worked with state management libraries like Redux and Vuex, and I'm familiar with
+    modern build tools like Webpack, Vite, and npm/yarn. I've implemented responsive designs
+    and have experience with CSS frameworks like Tailwind and Bootstrap.""",
+    
+    "backend_developer": """I have 6 years of experience developing server-side applications using
+    Java, Spring Boot, and Python. I'm proficient with database technologies including PostgreSQL,
+    MongoDB, and Redis. I've designed and implemented RESTful APIs and microservices architectures.
+    I have experience with message brokers like Kafka and RabbitMQ, and I'm familiar with Docker
+    and Kubernetes for containerization and orchestration.""",
+    
+    "data_scientist": """I have 3 years of experience in data science and machine learning.
+    My technical stack includes Python, pandas, NumPy, scikit-learn, and TensorFlow.
+    I've worked on projects involving natural language processing, computer vision, and
+    recommendation systems. I'm proficient with data visualization tools like Matplotlib,
+    Seaborn, and Tableau. I have experience with SQL for data extraction and analysis,
+    and I've used cloud platforms like AWS for model deployment.""",
+    
+    "devops_engineer": """I have 5 years of experience in DevOps and infrastructure automation.
+    I'm proficient with CI/CD pipelines using Jenkins, GitHub Actions, and GitLab CI.
+    My technical skills include infrastructure as code with Terraform and Ansible,
+    container orchestration with Kubernetes and Docker, and cloud platforms including
+    AWS, Azure, and GCP. I have experience with monitoring tools like Prometheus, Grafana,
+    and ELK stack for logging and analytics.""",
+    
+    "mobile_developer": """I have 4 years of experience developing mobile applications for
+    iOS and Android platforms. My primary skills include Swift, Kotlin, and cross-platform
+    frameworks like React Native and Flutter. I've published multiple apps to the App Store
+    and Google Play Store. I'm familiar with mobile architecture patterns, state management,
+    and have experience integrating with RESTful APIs and implementing push notifications.""",
+    
+    "database_administrator": """I have 8 years of experience as a database administrator
+    working with various database systems including Oracle, SQL Server, PostgreSQL, and MySQL.
+    I'm skilled in database design, performance tuning, backup and recovery procedures,
+    replication setup, and security management. I have experience with database migration
+    projects and implementing high-availability solutions.""",
+    
+    "security_engineer": """I have 7 years of experience in cybersecurity with a focus on
+    application security. I'm proficient in penetration testing, vulnerability assessment,
+    and security code reviews. I have experience with security tools like Burp Suite, Metasploit,
+    and OWASP ZAP. I've implemented security measures including encryption, authentication systems,
+    and intrusion detection systems. I also have experience with compliance frameworks like
+    GDPR, HIPAA, and SOC 2.""",
+    
+    "data_engineer": """I have 5 years of experience building data pipelines and ETL processes.
+    My technical skills include Python, SQL, Apache Spark, and Airflow for workflow orchestration.
+    I've worked with big data technologies like Hadoop and Hive, and I'm familiar with data
+    warehousing solutions such as Snowflake and BigQuery. I have experience optimizing query
+    performance and implementing data governance practices.""",
+    
+    "embedded_systems_engineer": """I have 6 years of experience developing embedded systems
+    and firmware. I'm proficient in C/C++ programming for microcontrollers, particularly ARM Cortex-M
+    series and AVR. I have experience with real-time operating systems (RTOS) like FreeRTOS and embedded
+    Linux. I'm familiar with communication protocols including I2C, SPI, UART, and CAN. I've worked on
+    projects involving IoT devices and have experience with low-power design techniques.""",
+    
+    "full_stack_developer": """I have 5 years of experience as a full-stack web developer.
+    On the frontend, I work with React, Angular, and JavaScript/TypeScript. For backend development,
+    I use Node.js, Express, and Django. I have experience with database technologies including
+    PostgreSQL and MongoDB. I'm familiar with cloud services on AWS and have implemented CI/CD
+    pipelines using GitHub Actions. I also have experience with Docker and containerization.""",
+    
+    "ml_engineer": """I have 4 years of experience building and deploying machine learning models.
+    My technical stack includes Python, TensorFlow, PyTorch, and scikit-learn. I've worked on computer
+    vision and NLP projects, and I'm familiar with deploying models using Flask, FastAPI, and TensorFlow
+    Serving. I have experience with MLOps tools like MLflow for experiment tracking and model versioning.
+    I've also worked with cloud-based ML platforms like AWS SageMaker and Azure ML.""",
+    
+    "qa_engineer": """I have 6 years of experience in quality assurance and software testing.
+    I'm proficient in both manual and automated testing using tools like Selenium, Cypress, and JUnit.
+    I have experience creating comprehensive test plans, test cases, and test strategies.
+    I'm familiar with CI/CD pipelines and have integrated automated tests into build processes.
+    I also have experience with performance testing using JMeter and load testing frameworks.""",
+    
+    "project_manager": """I have 10 years of experience in the tech industry, with the last 5 years
+    focused on project management. I started my career as a software developer working with Java and .NET,
+    which gives me a strong technical foundation. I'm certified in Agile methodologies and have led teams
+    of 5-15 developers across multiple projects. I have experience with project management tools like Jira,
+    Asana, and Microsoft Project, and I'm skilled in stakeholder communication and risk management.""",
+    
+    "cloud_architect": """I have 8 years of experience in cloud architecture and infrastructure design.
+    I'm an AWS Certified Solutions Architect and have extensive experience with AWS services including EC2,
+    S3, Lambda, ECS, and RDS. I've also worked with Azure and GCP for multi-cloud implementations.
+    I'm proficient with infrastructure as code using Terraform and CloudFormation, and I have experience
+    designing scalable, fault-tolerant architectures. I've implemented serverless architectures and
+    have experience with microservices design patterns.""",
+    
+    "game_developer": """I have 4 years of experience developing video games using Unity and Unreal Engine.
+    I'm proficient in C# for Unity development and C++ for Unreal. I have experience with 3D modeling,
+    animation systems, and game physics. I've implemented AI systems for NPCs and have experience with
+    networking for multiplayer games. I've published several indie games on Steam and mobile platforms."""
+}

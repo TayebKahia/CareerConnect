@@ -19,15 +19,25 @@ except LookupError:
     nltk.download("stopwords")
 
 
-class ConceptMatcher:
+# Singleton metaclass to ensure only one instance of ConceptMatcher exists
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class ConceptMatcher(metaclass=Singleton):
     def __init__(
         self,
         csv_path="../data/processed/technologies_with_abbreviations.csv",  # Updated path to new CSV with abbreviations
         columns=None,
-        model_name="all-mpnet-base-v2",
+        model_name="sentence-transformers/msmarco-distilbert-base-v4",
         similarity_threshold_graph=0.7,
-        ngram_threshold=0.5,
-        filter_similarity_threshold=0.85,
+        ngram_threshold=0.7,
+        filter_similarity_threshold=0.90,
     ):
         if columns is None:
             columns = [
@@ -72,7 +82,6 @@ class ConceptMatcher:
             []
         )  # Matched candidates with similarity scores.
         self.filtered_by_concept = {}  # Final grouped output after global filtering.
-        self.graph = None  # Optional similarity graph.
 
     def clean_text(self, text):
         """
@@ -132,7 +141,7 @@ class ConceptMatcher:
             f"Total StackOverflow Concepts (including abbreviations): {len(self.stack_concepts)}"
         )
 
-    def generate_concept_embeddings(self, save_embeddings=True, load_if_exists=True):
+    def generate_concept_embeddings(self, save_embeddings=False, load_if_exists=True):
         """
         Generate embeddings for all technology concepts or load existing ones if available.
 
@@ -140,15 +149,19 @@ class ConceptMatcher:
         - save_embeddings: Whether to save newly generated embeddings
         - load_if_exists: Whether to try loading existing embeddings first
         """
-        # Check notebooks directory first (for notebook execution)
-        filename_notebook = f"notebooks/stack_concept_embeddings_{self.model_name.replace('/', '_')}.npy"
-        # Also check current directory (for module execution)
-        filename_current = (
-            f"stack_concept_embeddings_{self.model_name.replace('/', '_')}.npy"
+        # Get project root directory (assuming the script is in src/features.py)
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+        # Check notebooks directory with absolute path
+        filename_notebook = os.path.join(
+            project_root,
+            "notebooks/tk",
+            f"stack_concept_embeddings_{self.model_name.replace('/', '_')}.npy",
         )
 
         # Try to load existing embeddings if requested
         if load_if_exists:
+            tried_paths = []
             try:
                 # Try notebook path first
                 if os.path.exists(filename_notebook):
@@ -157,49 +170,46 @@ class ConceptMatcher:
                         f"Loaded existing concept embeddings from {filename_notebook}"
                     )
                     return
+                tried_paths.append(filename_notebook)
+
                 # Then try current directory
-                elif os.path.exists(filename_current):
+                if os.path.exists(filename_current):
                     self.concept_embeddings = np.load(filename_current)
                     print(f"Loaded existing concept embeddings from {filename_current}")
                     return
-                else:
-                    print(f"No existing embeddings found, generating new ones...")
+                tried_paths.append(filename_current)
+
+                # Finally try project root
+                if os.path.exists(filename_project_root):
+                    self.concept_embeddings = np.load(filename_project_root)
+                    print(
+                        f"Loaded existing concept embeddings from {filename_project_root}"
+                    )
+                    return
+                tried_paths.append(filename_project_root)
+
+                print(f"No existing embeddings found, generating new ones...")
+                print(f"Checked paths: {tried_paths}")
             except Exception as e:
                 print(f"Error loading embeddings: {e}. Generating new ones...")
+                print(f"Checked paths: {tried_paths}")
 
         # Generate new embeddings
+        print("Generating new concept embeddings...")
         concept_texts = [concept["name"] for concept in self.stack_concepts]
         self.concept_embeddings = self.model.encode(
             concept_texts, convert_to_numpy=True
         )
 
         if save_embeddings:
-            # Save to the most appropriate location
-            save_path = (
-                filename_notebook if os.path.exists("notebooks") else filename_current
-            )
+            # Save to the most appropriate location - prefer notebooks directory if it exists
+            if os.path.exists(os.path.dirname(filename_notebook)):
+                save_path = filename_notebook
+            else:
+                save_path = filename_current
+
             np.save(save_path, self.concept_embeddings)
             print(f"Concept embeddings saved to {save_path}")
-
-    def build_similarity_graph(self):
-        self.graph = nx.Graph()
-        concept_texts = [concept["name"] for concept in self.stack_concepts]
-        for concept in self.stack_concepts:
-            self.graph.add_node(
-                concept["name"],
-                category=concept["type"],
-                original=concept.get("original", concept["name"]),
-            )
-        sim_matrix = cosine_similarity(self.concept_embeddings)
-        for i in range(len(concept_texts)):
-            for j in range(i + 1, len(concept_texts)):
-                if sim_matrix[i][j] >= self.similarity_threshold_graph:
-                    self.graph.add_edge(
-                        concept_texts[i], concept_texts[j], weight=sim_matrix[i][j]
-                    )
-        print(
-            f"Graph contains {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges."
-        )
 
     def prepare_candidate_phrases(self, long_text):
         cleaned_full_text = self.clean_text(long_text)
@@ -270,54 +280,74 @@ class ConceptMatcher:
             )
         print("Global filtering completed.")
 
-    def print_results(self):
-        print(
-            "\nGlobally Filtered Recognized Concepts using n‑gram detection (from StackOverflow data):"
-        )
-        print("=" * 60)
-        for concept, info in self.filtered_by_concept.items():
-            concept_type = info["type"]
-            print(f"Concept: {concept} ({concept_type})")
-            for phrase, score, n_val, tokens_phrase in sorted(
-                info["phrases"], key=lambda x: x[1], reverse=True
-            ):
-                print(
-                    f"    Detected {n_val}-gram: '{phrase}' with similarity {score:.2f}"
-                )
-            print("-" * 60)
-
     def get_recognized_technologies(self):
         """Get a simple list of recognized technologies."""
         return list(self.filtered_by_concept.keys())
 
+    def get_technologies_with_scores(self):
+        """
+        Get list of technologies with their highest similarity scores and other threshold information.
 
-# Define recommended models for technology embedding
-model_names = [
-    "all-MiniLM-L6-v2",
-    "sentence-transformers/msmarco-distilbert-base-v4",
-    "all-mpnet-base-v2",
-]
+        Returns:
+        - List of dictionaries with technology name, similarity score, and threshold information
+        """
+        result = []
 
-# Example usage if this file is run directly
-if __name__ == "__main__":
-    matcher = ConceptMatcher(
-        csv_path="../data/processed/technologies_with_abbreviations.csv",
-        model_name="all-mpnet-base-v2",
-        similarity_threshold_graph=0.7,
-        ngram_threshold=0.5,
-        filter_similarity_threshold=0.85,
-    )
-    matcher.load_concepts()
-    matcher.generate_concept_embeddings(save_embeddings=True, load_if_exists=True)
+        for tech_name, info in self.filtered_by_concept.items():
+            # Get the highest similarity score for this technology
+            highest_score = (
+                max([score for _, score, _, _ in info["phrases"]])
+                if info["phrases"]
+                else 0.0
+            )
 
-    # Sample text for testing
-    sample_text = """
-    I have extensive experience in data analysis and have worked with a variety of technologies including SQL,
-    Python, Java, cloud computing platforms like AWS, and I am proficient with machine learning techniques using TensorFlow and scikit-learn. 
-    My background also includes developing user interfaces with React and Vue. I have hands-on experience with business intelligence tools and
-    databases like MongoDB and PostgreSQL.
-    """
-    matcher.prepare_candidate_phrases(sample_text)
-    matcher.vectorized_match_candidates()
-    matcher.global_filtering()
-    matcher.print_results()
+            # Get the threshold values used in matching
+            tech_info = {
+                "name": tech_name,
+                "similarity_score": round(highest_score, 4),
+                "thresholds": {
+                    "ngram_threshold": self.ngram_threshold,
+                    "filter_similarity_threshold": self.filter_similarity_threshold,
+                },
+                "type": info["type"],
+                "phrases": [
+                    {"text": phrase, "score": round(score, 4)}
+                    for phrase, score, _, _ in info["phrases"]
+                ],
+            }
+
+            result.append(tech_info)
+
+        # Sort by similarity score (highest first)
+        result.sort(key=lambda x: x["similarity_score"], reverse=True)
+        return result
+
+    def process_text(self, long_text):
+        """
+        Process input text to identify technology concepts in one function call.
+
+        Parameters:
+        - long_text: The text to analyze for technology concepts
+
+        Returns:
+        - List of recognized technology concepts with similarity scores and thresholds
+        """
+        # Reset internal state for this new input
+        self.candidate_phrases = []
+        self.candidate_embeddings = None
+        self.recognized_candidates_ngram = []
+        self.filtered_by_concept = {}
+
+        # Process the text through the pipeline
+        self.prepare_candidate_phrases(long_text)
+        if not self.candidate_phrases:
+            print("No candidate phrases found in the input text.")
+            return []
+
+        self.vectorized_match_candidates()
+        if not self.recognized_candidates_ngram:
+            print("No technology concepts recognized in the input text.")
+            return []
+
+        self.global_filtering()
+        return self.get_technologies_with_scores()
