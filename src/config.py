@@ -20,7 +20,7 @@ NUM_LAYERS = 2
 
 # API configuration
 ENABLE_DEBUG_LOGGING = True
-DEFAULT_TOP_K = 5
+DEFAULT_TOP_K = 3
 MAX_SEARCH_RESULTS = 20
 
 # Device configuration

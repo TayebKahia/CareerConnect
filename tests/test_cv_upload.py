@@ -68,7 +68,7 @@ def test_cv_file_upload(pdf_path, api_url='http://localhost:5000', top_n=5):
         print("\nJob Recommendations:")
         recommendations = result.get('recommendations', [])
         for i, job in enumerate(recommendations, start=1):
-            print(f"{i}. {job.get('title')} (score: {job.get('raw_score'):.4f})")
+            print(f"{i}. {job.get('title')} (score: {job.get('matchScore'):.4f})")
 
         return result
 

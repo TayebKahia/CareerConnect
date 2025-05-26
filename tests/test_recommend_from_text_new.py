@@ -39,7 +39,8 @@ def test_recommend_from_text_new_endpoint():
         result = response.json()
         print("\nRecommendations:")
         for idx, rec in enumerate(result.get('recommendations', []), 1):
-            print(f"{idx}. {rec['title']} - Raw Score: {rec['raw_score']:.6f}")
+            print(
+                f"{idx}. {rec['title']} - Raw Score: {rec['matchScore']:.6f}")
 
         print("\nExtracted Skills:")
         for idx, skill in enumerate(result.get('extracted_skills', []), 1):

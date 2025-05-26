@@ -398,7 +398,7 @@ class JobRecommendationService:
 
             # Enhance results with ONET data
             enhanced_results = self._enhance_results_with_onet(
-                results, onet_data, extracted_skill_names)
+                results, onet_data, extracted_skill_names, filtered_skills)
 
             debug_log(
                 f"[{request_id}] ===== Completed Text-Based Recommendation Request (New Model) =====\n")
@@ -532,7 +532,7 @@ class JobRecommendationService:
 
             # Enhance results with ONET data
             enhanced_results = self._enhance_results_with_onet(
-                results, onet_data, extracted_skill_names)
+                results, onet_data, extracted_skill_names, filtered_skills)
 
             debug_log(
                 f"[{request_id}] ===== Completed CV-Based Recommendation Request (New Model) =====\n")
@@ -610,15 +610,15 @@ class JobRecommendationService:
                 pred_job_id = ranked_indices[i].item()
                 pred_job_title = gnn_model_cache.job_id_to_title_map.get(
                     pred_job_id, f"Unknown Job ID: {pred_job_id}")
-                raw_score = ranked_scores[i].item()
+                matchScore = ranked_scores[i].item()
 
                 # Use normalized score if available
                 scaled_score = scaled_scores[i] if top_n_scores else min(
-                    100, max(0, raw_score * 100))
+                    100, max(0, matchScore * 100))
 
                 results.append({
                     "title": pred_job_title,
-                    "raw_score": float(raw_score),
+                    "matchScore": float(matchScore),
                     "score": float(scaled_score)
                 })
 
@@ -654,7 +654,7 @@ class JobRecommendationService:
             debug_log(f"[{request_id}] {traceback.format_exc()}")
             return []  # Return empty list as fallback
 
-    def _enhance_results_with_onet(self, results, onet_data, extracted_skill_names):
+    def _enhance_results_with_onet(self, results, onet_data, extracted_skill_names, filtered_skills):
         """Enhance recommendation results with ONET job data"""
         # Create a lookup dictionary for O*NET data
         onet_data_dict = {
@@ -681,8 +681,10 @@ class JobRecommendationService:
             # Add job data to result
             enhanced_result = {
                 "title": job_title,
-                "raw_score": result['raw_score'],
-                "job_data": job_data
+                "matchScore": result['matchScore'],
+                "keySkills": filtered_skills,
+                "salary": "100000$",
+                # "job_data": job_data
             }
 
             enhanced_results.append(enhanced_result)

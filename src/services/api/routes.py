@@ -101,7 +101,7 @@ def register_routes(app, model_manager):
         else:
             return jsonify(result)
 
-    @app.route('/api/recommend-GNN-Onet-from-text', methods=['POST'])
+    @app.route('/api/analyze/onet', methods=['POST'])
     def recommend_from_text_new():
         """Recommend jobs based on text description using the new model"""
         request_id = str(uuid.uuid4())[:8]
@@ -125,7 +125,7 @@ def register_routes(app, model_manager):
         else:
             return jsonify(result)
 
-    @app.route('/api/recommend-GNN-Onet-from-cv', methods=['POST'])
+    @app.route('/api/analyze/onet/multipart/form-data', methods=['POST'])
     def recommend_from_cv_new():
         """Recommend jobs based on CV (PDF) using the new model"""
         request_id = str(uuid.uuid4())[:8]
@@ -155,14 +155,14 @@ def register_routes(app, model_manager):
 
         # Get top_n parameter from form or query parameters
         top_n = DEFAULT_TOP_K
-        if 'top_n' in request.form:
-            top_n = int(request.form.get('top_n'))
-        elif 'top_n' in request.args:
-            top_n = int(request.args.get('top_n'))
+        if 'top_k' in request.form:
+            top_k = int(request.form.get('top_k'))
+        elif 'top_k' in request.args:
+            top_k = int(request.args.get('top_k'))
 
         # Call service method to get recommendations
         result = job_recommendation_service.recommend_from_cv(
-            pdf_file, top_n, request_id)
+            pdf_file, top_k, request_id)
 
         # Check if the result is a tuple (response, status_code)
         if isinstance(result, tuple):

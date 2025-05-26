@@ -81,12 +81,12 @@ The endpoint returns JSON data with the following structure:
     {
       "title": "Data Scientist",
       "score": 87.5,
-      "raw_score": 0.875
+      "matchScore": 0.875
     },
     {
       "title": "Machine Learning Engineer",
       "score": 82.3,
-      "raw_score": 0.823
+      "matchScore": 0.823
     }
   ],
   "total_recommendations": 2,
@@ -101,7 +101,7 @@ The endpoint returns JSON data with the following structure:
 - `recommendations`: Array of job recommendation objects
   - `title`: The job title
   - `score`: The confidence score (0-100)
-  - `raw_score`: The raw model prediction score (0-1)
+  - `matchScore`: The raw model prediction score (0-1)
 - `total_recommendations`: Total number of recommendations returned
 - `timestamp`: Unix timestamp of the request
 
@@ -140,7 +140,7 @@ The endpoint returns JSON data with the following structure:
   "recommendations": [
     {
       "title": "Data Scientist",
-      "raw_score": 0.875,
+      "matchScore": 0.875,
       "job_data": {
         "title": "Data Scientist",
         "technology_skills": [
@@ -186,7 +186,7 @@ The endpoint returns JSON data with the following structure:
 - `request_id`: Unique identifier for this request
 - `recommendations`: Array of job recommendation objects
   - `title`: The job title
-  - `raw_score`: The raw model prediction score (0-1)
+  - `matchScore`: The raw model prediction score (0-1)
   - `job_data`: Full O\*NET data for the job, including:
     - Technology skills with matching flags
     - Matched technologies within each skill
