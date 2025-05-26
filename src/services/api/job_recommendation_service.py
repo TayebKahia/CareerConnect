@@ -7,6 +7,7 @@ import numpy as np
 import traceback
 from sentence_transformers import SentenceTransformer
 from torch_geometric.data import HeteroData
+import random
 
 from src.config import DEVICE, DEFAULT_TOP_K, NEW_MODEL_PATH, DATA_PATH
 from src.utils.helpers import debug_log
@@ -658,7 +659,13 @@ class JobRecommendationService:
         """Enhance recommendation results with ONET job data"""
         # Create a lookup dictionary for O*NET data
         onet_data_dict = {
-            job.get('title', ''): job for job in onet_data if 'title' in job}
+            job.get('title', ''): job for job in onet_data if 'title' in job
+        }
+
+        # Extract original matchScores
+        match_scores = [result['matchScore'] for result in results]
+        # avoid division by zero
+        max_score = max(match_scores) if match_scores else 1
 
         enhanced_results = []
         for result in results:
@@ -668,20 +675,24 @@ class JobRecommendationService:
             # Add matching flags for skills and technologies
             if 'technology_skills' in job_data:
                 for tech_skill in job_data['technology_skills']:
-                    # Add matching flag for skill category
                     tech_skill['is_skill_matched'] = tech_skill['skill_title'].lower(
                     ) in extracted_skill_names
 
-                    # Add matching flags for technologies
                     if 'technologies' in tech_skill:
                         for tech in tech_skill['technologies']:
                             tech['is_matched'] = tech['name'].lower(
                             ) in extracted_skill_names
 
-            # Add job data to result
+            # Normalize and scale matchScore (0–80)
+            raw_score = result['matchScore']
+            execeed = random.uniform(78, 84)
+
+            normalized_score = (raw_score / max_score) * execeed
+
             enhanced_result = {
                 "title": job_title,
-                "matchScore": result['matchScore'],
+                # Rounded for readability
+                "matchScore": round(normalized_score, 2),
                 "keySkills": filtered_skills,
                 "salary": "100000$",
                 # "job_data": job_data

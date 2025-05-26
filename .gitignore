@@ -100,3 +100,7 @@ target/
 /data/external
 /data/interim
 /memory-bank
+
+/DATA_BASE
+/debug_output
+/docs
