@@ -98,7 +98,78 @@ class DualJobRolePredictor:
             List of extracted technology names
         """
         return self.ensemble.extract_technologies(text)
-
+    
+    def predict_from_pdf(self, pdf_file, top_k=3):
+        """
+        Predict job roles from a PDF file (CV/resume).
+        
+        Args:
+            pdf_file: A file-like object containing PDF data
+            top_k: Number of top predictions to return
+            
+        Returns:
+            Dictionary with prediction results
+        """
+        import pypdfium2 as pdfium
+        import os
+        import time
+        import uuid
+        from src.utils.helpers import debug_log
+        
+        # Generate a unique ID for this request
+        request_id = str(uuid.uuid4())[:8]
+        
+        try:
+            # Extract text from PDF using pypdfium2
+            pdf_doc = pdfium.PdfDocument(pdf_file)
+            text_pages = []
+            for i in range(len(pdf_doc)):
+                page = pdf_doc.get_page(i)
+                textpage = page.get_textpage()
+                text_pages.append(textpage.get_text_range())
+                textpage.close()
+                page.close()
+            text = "\n\n".join(text_pages)
+            pdf_doc.close()
+            
+            debug_log(f"[{request_id}] Successfully extracted {len(text)} characters from PDF using pypdfium2")
+            
+            # Save extracted text for debugging
+            debug_output_dir = os.path.join('debug_output')
+            os.makedirs(debug_output_dir, exist_ok=True)
+            
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            safe_filename = ''.join(
+                c if c.isalnum() else '_' for c in pdf_file.filename)
+            output_filename = f"{safe_filename}_{timestamp}_{request_id}.txt"
+            output_filepath = os.path.join(
+                debug_output_dir, output_filename)
+            
+            with open(output_filepath, 'w', encoding='utf-8') as f:
+                f.write(
+                    f"=== Extracted Text from {pdf_file.filename} (using pypdfium2) ===\n\n")
+                f.write(text)
+            
+            debug_log(f"[{request_id}] Saved extracted text to {output_filepath}")
+            
+            # If no text was extracted, return an error
+            if not text.strip():
+                debug_log(f"[{request_id}] No text could be extracted from the PDF")
+                return {
+                    'status': 'error',
+                    'message': 'No text could be extracted from the PDF'
+                }
+            
+            # Process the extracted text
+            debug_log(f"[{request_id}] Proceeding with text prediction from extracted PDF content")
+            return self.predict_from_text(text, top_k)
+        
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': f'Error processing PDF: {str(e)}'
+            }
+        
 
 # Singleton instance for easy import
 _predictor = None
@@ -120,13 +191,14 @@ def get_predictor(model_dir=None, concept_matcher_path=None):
     return _predictor
 
 
-def predict_job_role(text=None, technologies=None, top_k=3):
+def predict_job_role(text=None, technologies=None, pdf_file=None, top_k=3):
     """
-    Predict job roles from text or a list of technologies.
+    Predict job roles from text, a list of technologies, or a PDF file.
     
     Args:
         text: Input text to extract technologies from
         technologies: List of technology names
+        pdf_file: A file-like object containing PDF data
         top_k: Number of top predictions to return
         
     Returns:
@@ -134,12 +206,14 @@ def predict_job_role(text=None, technologies=None, top_k=3):
     """
     predictor = get_predictor()
     
-    if text is not None:
+    if pdf_file is not None:
+        return predictor.predict_from_pdf(pdf_file, top_k)
+    elif text is not None:
         return predictor.predict_from_text(text, top_k)
     elif technologies is not None:
         return predictor.predict_from_technologies(technologies, top_k)
     else:
-        raise ValueError("Either text or technologies must be provided")
+        raise ValueError("Either text, technologies, or pdf_file must be provided")
 
 
 if __name__ == "__main__":
