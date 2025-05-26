@@ -1,3 +1,11 @@
+import os
+import sys
+
+# Add the project root to the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from flask import Flask
 import torch
 from flask_cors import CORS

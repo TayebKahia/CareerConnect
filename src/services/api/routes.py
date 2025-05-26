@@ -3,10 +3,15 @@ import json
 import time
 import os
 import csv
-from flask import jsonify, request
+from flask import jsonify, request, Blueprint
+from werkzeug.utils import secure_filename
+import os
+from src.utils.pdf_processor import extract_text_from_pdf
+import logging
 
 from src.config import DEFAULT_TOP_K
 from .job_recommendation_service import JobRecommendationService
+from .esco_job_matching_service import ESCOJobMatchingService
 from src.utils.helpers import debug_log
 from src.modeling.predict_dual import get_predictor
 
@@ -56,24 +61,29 @@ def get_salary_for_job(job_title, salary_data, salary_data_lower):
         # Try case-insensitive lookup
         salary = salary_data_lower.get(job_title.lower(), "Salary data not available")
     return salary
+logger = logging.getLogger(__name__)
+
+ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def register_routes(app, model_manager):
     """Register all API routes"""
     # Initialize the job recommendation service
     job_recommendation_service = JobRecommendationService()
+    esco_service = ESCOJobMatchingService()
 
-    # Initialize the job recommendation model once at startup with timing measurement
+    # Initialize the models once at startup with timing measurement
+    import time
     start_time = time.time()
     debug_log("Starting job recommendation model initialization...")
     success = job_recommendation_service.initialize_new_model()
+    esco_success = esco_service.initialize_model()
     end_time = time.time()
     debug_log(
-        f"Job recommendation model initialization {'completed successfully' if success else 'failed'} in {end_time - start_time:.2f} seconds")
-    
-    # Initialize the job prediction model (Dual Ensemble)
-    debug_log("Starting job prediction model initialization...")
-    predictor = get_predictor()
-    debug_log("Job prediction model initialization completed")
+        f"Model initialization {'completed successfully' if success and esco_success else 'failed'} in {end_time - start_time:.2f} seconds")
 
     @app.route('/', methods=['GET'])
     def index():
@@ -126,6 +136,26 @@ def register_routes(app, model_manager):
                     'parameters': {
                         'q': 'Search query',
                         'limit': 'Maximum number of results (default: 20)'
+                    }
+                },
+                {
+                    'path': '/api/predict-job',
+                    'method': 'POST',
+                    'description': 'Predict job based on text description using ESCO model',
+                    'example_payload': {
+                        'text': 'I am a software engineer with experience in Python and web development...',
+                        'threshold': 0.5,
+                        'similarity_threshold': 0.5,
+                        'gcn_weight': 0.3
+                    }
+                },
+                {
+                    'path': '/api/debug-skills',
+                    'method': 'POST',
+                    'description': 'Debug skill extraction from text',
+                    'example_payload': {
+                        'text': 'I am proficient in Python and JavaScript...',
+                        'similarity_threshold': 0.5
                     }
                 },
                 {
@@ -393,5 +423,136 @@ def register_routes(app, model_manager):
                 'message': f'An error occurred: {str(e)}'
             }), 500
  
+    @app.route('/api/analyze/esco', methods=['POST'])
+    def predict_job():
+        """Predict job based on text description using ESCO model"""
+        request_id = str(uuid.uuid4())[:8]
+        debug_log(f"[{request_id}] Received job prediction request")
+
+        try:
+            data = request.get_json(force=True)
+            if not data or 'text' not in data:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Missing required field: text'
+                }), 400
+
+            threshold = data.get('threshold', 0.5)
+            similarity_threshold = data.get('similarity_threshold', 0.5)
+            gcn_weight = data.get('gcn_weight', 0.3)
+
+            result = esco_service.predict_job(
+                data['text'],
+                threshold=threshold,
+                gcn_weight=gcn_weight
+            )
+            return jsonify({
+                'status': 'success',
+                'data': result
+            })
+        except ValueError as e:
+            return jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 400
+        except Exception as e:
+            debug_log(f"[{request_id}] Error processing request: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'message': f'Internal server error: {str(e)}'
+            }), 500
+
+    @app.route('/api/debug-skills', methods=['POST'])
+    def debug_skills():
+        """Debug skill extraction from text"""
+        request_id = str(uuid.uuid4())[:8]
+        debug_log(f"[{request_id}] Received skill debugging request")
+
+        try:
+            data = request.get_json(force=True)
+            if not data or 'text' not in data:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Missing required field: text'
+                }), 400
+
+            similarity_threshold = data.get('similarity_threshold', 0.5)
+            skills = esco_service.extract_skills_from_text(
+                data['text'],
+                similarity_threshold=similarity_threshold
+            )
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'extracted_skills': skills
+                }
+            })
+        except Exception as e:
+            debug_log(f"[{request_id}] Error processing request: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'message': f'Internal server error: {str(e)}'
+            }), 500
+
+    @app.route('/api/analyze/esco/multipart/form-data', methods=['POST'])
+    def analyze_esco():
+        try:
+            if 'file' in request.files:
+                file = request.files['file']
+                
+                # Validate file
+                if not file or not allowed_file(file.filename):
+                    return jsonify({
+                        'error': f'Invalid file type. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}'
+                    }), 400
+                
+                # Check file size
+                file.seek(0, os.SEEK_END)
+                size = file.tell()
+                file.seek(0)
+                
+                if size > MAX_FILE_SIZE:
+                    return jsonify({
+                        'error': f'File too large. Maximum size: {MAX_FILE_SIZE/1024/1024}MB'
+                    }), 400
+                
+                # Process file based on type
+                filename = secure_filename(file.filename)
+                if filename.endswith('.pdf'):
+                    text = extract_text_from_pdf(file)
+                elif filename.endswith('.docx'):
+                    # TODO: Add DOCX processing
+                    return jsonify({'error': 'DOCX processing not yet implemented'}), 501
+                else:
+                    text = file.read().decode('utf-8')
+                
+                if not text:
+                    return jsonify({'error': 'Could not extract text from file'}), 400
+                
+            elif 'text' in request.json:
+                text = request.json['text']
+            else:
+                return jsonify({'error': 'No file or text provided'}), 400
+            
+            # Get job predictions
+            results, status_code = model_manager.predict_job(text)
+            
+            if status_code != 200:
+                return jsonify(results), status_code
+            
+            # Format response according to the specified structure
+            formatted_results = [{
+                'title': job['title'],
+                'matchScore': job['score'],
+                'keySkills': job['matching_skills'],
+                'salary': job['salary_range']
+            } for job in results['jobs']]
+            
+            return jsonify(formatted_results), 200
+            
+        except Exception as e:
+            logger.error(f"Error processing request: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+
     # Return the app with registered routes
     return app
