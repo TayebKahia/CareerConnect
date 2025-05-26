@@ -424,135 +424,217 @@ def register_routes(app, model_manager):
             }), 500
  
     @app.route('/api/analyze/esco', methods=['POST'])
-    def predict_job():
-        """Predict job based on text description using ESCO model"""
-        request_id = str(uuid.uuid4())[:8]
-        debug_log(f"[{request_id}] Received job prediction request")
-
-        try:
-            data = request.get_json(force=True)
-            if not data or 'text' not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Missing required field: text'
-                }), 400
-
-            threshold = data.get('threshold', 0.5)
-            similarity_threshold = data.get('similarity_threshold', 0.5)
-            gcn_weight = data.get('gcn_weight', 0.3)
-
-            result = esco_service.predict_job(
-                data['text'],
-                threshold=threshold,
-                gcn_weight=gcn_weight
-            )
-            return jsonify({
-                'status': 'success',
-                'data': result
-            })
-        except ValueError as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 400
-        except Exception as e:
-            debug_log(f"[{request_id}] Error processing request: {str(e)}")
-            return jsonify({
-                'status': 'error',
-                'message': f'Internal server error: {str(e)}'
-            }), 500
-
-    @app.route('/api/debug-skills', methods=['POST'])
-    def debug_skills():
-        """Debug skill extraction from text"""
-        request_id = str(uuid.uuid4())[:8]
-        debug_log(f"[{request_id}] Received skill debugging request")
-
-        try:
-            data = request.get_json(force=True)
-            if not data or 'text' not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Missing required field: text'
-                }), 400
-
-            similarity_threshold = data.get('similarity_threshold', 0.5)
-            skills = esco_service.extract_skills_from_text(
-                data['text'],
-                similarity_threshold=similarity_threshold
-            )
-            return jsonify({
-                'status': 'success',
-                'data': {
-                    'extracted_skills': skills
-                }
-            })
-        except Exception as e:
-            debug_log(f"[{request_id}] Error processing request: {str(e)}")
-            return jsonify({
-                'status': 'error',
-                'message': f'Internal server error: {str(e)}'
-            }), 500
-
-    @app.route('/api/analyze/esco/multipart/form-data', methods=['POST'])
     def analyze_esco():
+        request_id = str(uuid.uuid4())[:8]
+        logger.info(f"[{request_id}] Received request to /api/analyze/esco")
+        logger.info(f"[{request_id}] Content-Type: {request.content_type}")
+        
         try:
             if 'file' in request.files:
+                logger.info(f"[{request_id}] File upload detected")
                 file = request.files['file']
+                logger.info(f"[{request_id}] Filename: {file.filename}")
                 
                 # Validate file
                 if not file or not allowed_file(file.filename):
+                    logger.warning(f"[{request_id}] Invalid file type: {file.filename}")
                     return jsonify({
-                        'error': f'Invalid file type. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}'
+                        "error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}",
+                        "status": "error"
                     }), 400
-                
+
                 # Check file size
                 file.seek(0, os.SEEK_END)
                 size = file.tell()
                 file.seek(0)
+                logger.info(f"[{request_id}] File size: {size/1024/1024:.2f}MB")
                 
                 if size > MAX_FILE_SIZE:
+                    logger.warning(f"[{request_id}] File too large: {size/1024/1024:.2f}MB")
                     return jsonify({
-                        'error': f'File too large. Maximum size: {MAX_FILE_SIZE/1024/1024}MB'
+                        "error": "File size exceeds 5MB limit",
+                        "status": "error"
                     }), 400
-                
+
                 # Process file based on type
-                filename = secure_filename(file.filename)
-                if filename.endswith('.pdf'):
+                if file.filename.endswith('.pdf'):
+                    logger.info(f"[{request_id}] Processing PDF file")
                     text = extract_text_from_pdf(file)
-                elif filename.endswith('.docx'):
-                    # TODO: Add DOCX processing
-                    return jsonify({'error': 'DOCX processing not yet implemented'}), 501
+                    if not text:
+                        logger.warning(f"[{request_id}] Failed to extract text from PDF")
+                        return jsonify({
+                            "error": "Could not extract text from PDF",
+                            "status": "error"
+                        }), 400
+                    logger.info(f"[{request_id}] Successfully extracted text from PDF")
                 else:
-                    text = file.read().decode('utf-8')
+                    logger.warning(f"[{request_id}] Unsupported file type")
+                    return jsonify({
+                        "error": "Unsupported file type",
+                        "status": "error"
+                    }), 400
+
+            elif request.is_json:
+                logger.info(f"[{request_id}] Processing JSON request")
+                data = request.get_json()
+                text = data.get('text', '').strip()
+                threshold = data.get('threshold', 0.5)
+                similarity_threshold = data.get('similarity_threshold', 0.5)
+                gcn_weight = data.get('gcn_weight', 0.3)
+                
+                logger.info(f"[{request_id}] Parameters: threshold={threshold}, similarity_threshold={similarity_threshold}, gcn_weight={gcn_weight}")
                 
                 if not text:
-                    return jsonify({'error': 'Could not extract text from file'}), 400
-                
-            elif 'text' in request.json:
-                text = request.json['text']
+                    logger.warning(f"[{request_id}] No text provided in request")
+                    return jsonify({
+                        "error": "No text provided in request",
+                        "status": "error"
+                    }), 400
             else:
-                return jsonify({'error': 'No file or text provided'}), 400
-            
-            # Get job predictions
-            results, status_code = model_manager.predict_job(text)
-            
+                logger.warning(f"[{request_id}] Invalid request format")
+                return jsonify({
+                    "error": "Invalid request format. Send either a file or JSON with text field",
+                    "status": "error"
+                }), 400
+
+            # Process the text through the ESCO service
+            logger.info(f"[{request_id}] Processing text through ESCO service")
+            result, status_code = esco_service.predict_job(
+                text=text,
+                threshold=threshold,
+                similarity_threshold=similarity_threshold,
+                gcn_weight=gcn_weight
+            )
+
             if status_code != 200:
-                return jsonify(results), status_code
-            
-            # Format response according to the specified structure
-            formatted_results = [{
-                'title': job['title'],
-                'matchScore': job['score'],
-                'keySkills': job['matching_skills'],
-                'salary': job['salary_range']
-            } for job in results['jobs']]
-            
-            return jsonify(formatted_results), 200
-            
+                logger.warning(f"[{request_id}] ESCO service returned error: {result}")
+                return jsonify(result), status_code
+
+            # Format the response according to the desired structure
+            # Limit to top 3 recommendations
+            recommendations = []
+            for job in result.get('jobs', [])[:3]:  # Only take the first 3 jobs
+                recommendations.append({
+                    "title": job['title'],
+                    "matchScore": job['score'],
+                    "keySkills": job['matching_skills'],
+                    "salary": job['salary_range']
+                })
+
+            logger.info(f"[{request_id}] Successfully generated {len(recommendations)} recommendations")
+            return jsonify({
+                "recommendations": recommendations
+            }), 200
+
         except Exception as e:
-            logger.error(f"Error processing request: {str(e)}")
-            return jsonify({'error': str(e)}), 500
+            logger.error(f"[{request_id}] Error in analyze_esco: {str(e)}")
+            import traceback
+            logger.error(f"[{request_id}] Traceback: {traceback.format_exc()}")
+            return jsonify({
+                "error": "Internal server error",
+                "status": "error"
+            }), 500
+
+    # Add route for multipart form data
+    @app.route('/api/analyze/esco/multipart/form-data', methods=['POST'])
+    def analyze_esco_multipart():
+        request_id = str(uuid.uuid4())[:8]
+        logger.info(f"[{request_id}] Received request to /api/analyze/esco/multipart/form-data")
+        logger.info(f"[{request_id}] Content-Type: {request.content_type}")
+        
+        try:
+            if 'file' not in request.files:
+                logger.warning(f"[{request_id}] No file part in request")
+                return jsonify({
+                    "error": "No file provided",
+                    "status": "error"
+                }), 400
+
+            file = request.files['file']
+            logger.info(f"[{request_id}] Received file: {file.filename}")
+
+            if not file or not allowed_file(file.filename):
+                logger.warning(f"[{request_id}] Invalid file type: {file.filename}")
+                return jsonify({
+                    "error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}",
+                    "status": "error"
+                }), 400
+
+            # Check file size
+            file.seek(0, os.SEEK_END)
+            size = file.tell()
+            file.seek(0)
+            logger.info(f"[{request_id}] File size: {size/1024/1024:.2f}MB")
+
+            if size > MAX_FILE_SIZE:
+                logger.warning(f"[{request_id}] File too large: {size/1024/1024:.2f}MB")
+                return jsonify({
+                    "error": "File size exceeds 5MB limit",
+                    "status": "error"
+                }), 400
+
+            # Process file based on type
+            if file.filename.endswith('.pdf'):
+                logger.info(f"[{request_id}] Processing PDF file")
+                text = extract_text_from_pdf(file)
+                if not text:
+                    logger.warning(f"[{request_id}] Failed to extract text from PDF")
+                    return jsonify({
+                        "error": "Could not extract text from PDF",
+                        "status": "error"
+                    }), 400
+                logger.info(f"[{request_id}] Successfully extracted text from PDF")
+            else:
+                logger.warning(f"[{request_id}] Unsupported file type")
+                return jsonify({
+                    "error": "Unsupported file type",
+                    "status": "error"
+                }), 400
+
+            # Get parameters from form data
+            threshold = float(request.form.get('threshold', 0.5))
+            similarity_threshold = float(request.form.get('similarity_threshold', 0.5))
+            gcn_weight = float(request.form.get('gcn_weight', 0.3))
+
+            logger.info(f"[{request_id}] Parameters: threshold={threshold}, similarity_threshold={similarity_threshold}, gcn_weight={gcn_weight}")
+
+            # Process the text through the ESCO service
+            logger.info(f"[{request_id}] Processing text through ESCO service")
+            result, status_code = esco_service.predict_job(
+                text=text,
+                threshold=threshold,
+                similarity_threshold=similarity_threshold,
+                gcn_weight=gcn_weight
+            )
+
+            if status_code != 200:
+                logger.warning(f"[{request_id}] ESCO service returned error: {result}")
+                return jsonify(result), status_code
+
+            # Format the response according to the desired structure
+            # Limit to top 3 recommendations
+            recommendations = []
+            for job in result.get('jobs', [])[:3]:  # Only take the first 3 jobs
+                recommendations.append({
+                    "title": job['title'],
+                    "matchScore": job['score'],
+                    "keySkills": job['matching_skills'],
+                    "salary": job['salary_range']
+                })
+
+            logger.info(f"[{request_id}] Successfully generated {len(recommendations)} recommendations")
+            return jsonify({
+                "recommendations": recommendations
+            }), 200
+
+        except Exception as e:
+            logger.error(f"[{request_id}] Error in analyze_esco_multipart: {str(e)}")
+            import traceback
+            logger.error(f"[{request_id}] Traceback: {traceback.format_exc()}")
+            return jsonify({
+                "error": "Internal server error",
+                "status": "error"
+            }), 500
 
     # Return the app with registered routes
     return app

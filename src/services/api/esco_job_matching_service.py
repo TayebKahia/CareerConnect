@@ -462,34 +462,35 @@ class ESCOJobMatchingService:
             variation = random.uniform(-0.05, 0.05)
             base_salary = int(base_salary * (1 + variation))
             
-            # Calculate range (typically ±20% from base)
-            min_salary = int(base_salary * 0.8)
-            max_salary = int(base_salary * 1.4)
-            
-            # Format the salary range
-            return f"${min_salary:,} - ${max_salary:,}"
+            # Format the salary
+            return f"${base_salary:,}"
             
         except Exception as e:
             logger.warning(f"Error generating salary for job {job_title}: {str(e)}")
-            return "Salary range not available"
+            return "$120,000"  # Default fallback salary
 
     def predict_job(self, text: str, threshold: float = 0.3, similarity_threshold: float = 0.5, gcn_weight: float = 0.3):
         """Predict the most suitable job based on the input text"""
         try:
-            # Detect language
-            lang = detect(text)
-            logger.info(f"Detected text language: {lang}")
-            if lang != "en":
-                return {"error": "Only English text is supported"}, 400
+            # Clean and normalize input text
+            text = text.strip()
+            if not text:
+                return {
+                    "error": "Please provide some text describing your skills and experience",
+                    "status": "error"
+                }, 400
 
-            # Extract skills from text
+            # Extract skills from text without language detection
             skills = self.extract_skills_from_text(text, similarity_threshold)
             if not skills:
                 logger.warning("Only 0 skills extracted. Retrying with lower threshold...")
                 skills = self.extract_skills_from_text(text, similarity_threshold * 0.7)
 
             if not skills:
-                return {"error": "No relevant skills found in the text"}, 400
+                return {
+                    "error": "No relevant skills found in the text",
+                    "status": "error"
+                }, 400
 
             # Get text embedding
             text_embedding = self.model.encode([text], show_progress_bar=False)[0]
@@ -658,16 +659,21 @@ class ESCOJobMatchingService:
                     "jobs": all_scores[:5],
                     "extracted_skills": skills,
                     "threshold": threshold * 100,  # Convert to percentage
-                    "note": "Consider lowering the threshold for more matches"
+                    "note": "Consider lowering the threshold for more matches",
+                    "status": "success"
                 }, 200
 
             return {
                 "jobs": job_scores,
                 "extracted_skills": skills,
                 "message": "Jobs found successfully",
-                "threshold_used": threshold * 100  # Convert to percentage
+                "threshold_used": threshold * 100,  # Convert to percentage
+                "status": "success"
             }, 200
 
         except Exception as e:
             logger.error(f"Error predicting job: {str(e)}")
-            return {"error": str(e)}, 500 
+            return {
+                "error": str(e),
+                "status": "error"
+            }, 500 
