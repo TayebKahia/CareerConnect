@@ -24,10 +24,7 @@ def create_app():
 
     # Initialize Flask app
     app = Flask(__name__)
-    
-    # Enable CORS for all routes
-    CORS(app)
-    
+
     # Initialize model manager
     model_manager = ModelManager()
     success = model_manager.initialize_model()
@@ -36,7 +33,7 @@ def create_app():
         debug_log("Failed to initialize model manager")
         raise RuntimeError("Failed to initialize model manager")
 
-    # Register routes (both job recommendation and job prediction routes)
+    # Register routes
     register_routes(app, model_manager)
 
     return app
@@ -47,12 +44,9 @@ def main():
     print("Starting CareerConnect API...")
     app = create_app()
 
-    # Get port from environment variable or use default
-    port = int(os.environ.get('PORT', 8000))
-    
     # Run with reduced reloader and no static file changes detection
     # Disable watching for file changes
-    app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
+    app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
 
 
 if __name__ == '__main__':

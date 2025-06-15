@@ -101,6 +101,7 @@ target/
 /data/interim
 /memory-bank
 
+/memory-bank
+
 /DATA_BASE
 /debug_output
-/docs

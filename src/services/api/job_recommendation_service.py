@@ -7,7 +7,6 @@ import numpy as np
 import traceback
 from sentence_transformers import SentenceTransformer
 from torch_geometric.data import HeteroData
-import random
 
 from src.config import DEVICE, DEFAULT_TOP_K, NEW_MODEL_PATH, DATA_PATH
 from src.utils.helpers import debug_log
@@ -399,7 +398,7 @@ class JobRecommendationService:
 
             # Enhance results with ONET data
             enhanced_results = self._enhance_results_with_onet(
-                results, onet_data, extracted_skill_names, filtered_skills)
+                results, onet_data, extracted_skill_names)
 
             debug_log(
                 f"[{request_id}] ===== Completed Text-Based Recommendation Request (New Model) =====\n")
@@ -408,6 +407,7 @@ class JobRecommendationService:
                 'request_id': request_id,
                 'recommendations': enhanced_results,
                 'total_recommendations': len(enhanced_results),
+                'extracted_skills': filtered_skills,
                 'total_skills': len(filtered_skills),
                 'timestamp': time.time()
             }
@@ -532,7 +532,7 @@ class JobRecommendationService:
 
             # Enhance results with ONET data
             enhanced_results = self._enhance_results_with_onet(
-                results, onet_data, extracted_skill_names, filtered_skills)
+                results, onet_data, extracted_skill_names)
 
             debug_log(
                 f"[{request_id}] ===== Completed CV-Based Recommendation Request (New Model) =====\n")
@@ -541,6 +541,7 @@ class JobRecommendationService:
                 'request_id': request_id,
                 'recommendations': enhanced_results,
                 'total_recommendations': len(enhanced_results),
+                'extracted_skills': filtered_skills,
                 'total_skills': len(filtered_skills),
                 'timestamp': time.time()
             }
@@ -609,15 +610,15 @@ class JobRecommendationService:
                 pred_job_id = ranked_indices[i].item()
                 pred_job_title = gnn_model_cache.job_id_to_title_map.get(
                     pred_job_id, f"Unknown Job ID: {pred_job_id}")
-                matchScore = ranked_scores[i].item()
+                raw_score = ranked_scores[i].item()
 
                 # Use normalized score if available
                 scaled_score = scaled_scores[i] if top_n_scores else min(
-                    100, max(0, matchScore * 100))
+                    100, max(0, raw_score * 100))
 
                 results.append({
                     "title": pred_job_title,
-                    "matchScore": float(matchScore),
+                    "raw_score": float(raw_score),
                     "score": float(scaled_score)
                 })
 
@@ -653,53 +654,35 @@ class JobRecommendationService:
             debug_log(f"[{request_id}] {traceback.format_exc()}")
             return []  # Return empty list as fallback
 
-    def _enhance_results_with_onet(self, results, onet_data, extracted_skill_names, filtered_skills):
+    def _enhance_results_with_onet(self, results, onet_data, extracted_skill_names):
         """Enhance recommendation results with ONET job data"""
+        # Create a lookup dictionary for O*NET data
         onet_data_dict = {
-            job.get('title', ''): job for job in onet_data if 'title' in job
-        }
-
-        match_scores = [result['matchScore'] for result in results]
-        max_score = max(match_scores) if match_scores else 1
+            job.get('title', ''): job for job in onet_data if 'title' in job}
 
         enhanced_results = []
-
         for result in results:
             job_title = result['title']
             job_data = onet_data_dict.get(job_title, {})
 
-            all_required_skills = set()
-            missing_skills = set()
-
+            # Add matching flags for skills and technologies
             if 'technology_skills' in job_data:
                 for tech_skill in job_data['technology_skills']:
-                    skill_title = tech_skill['skill_title'].lower()
-                    all_required_skills.add(skill_title)
-                    tech_skill['is_skill_matched'] = skill_title in extracted_skill_names
+                    # Add matching flag for skill category
+                    tech_skill['is_skill_matched'] = tech_skill['skill_title'].lower(
+                    ) in extracted_skill_names
 
+                    # Add matching flags for technologies
                     if 'technologies' in tech_skill:
                         for tech in tech_skill['technologies']:
-                            tech_name = tech['name'].lower()
-                            all_required_skills.add(tech_name)
-                            tech['is_matched'] = tech_name in extracted_skill_names
+                            tech['is_matched'] = tech['name'].lower(
+                            ) in extracted_skill_names
 
-            # Identify missing skills
-            missing_skills = all_required_skills - extracted_skill_names
-
-            # Normalize score
-            raw_score = result['matchScore']
-            scale_cap = random.uniform(78, 84)
-            normalized_score = (raw_score / max_score) * scale_cap
-
-            # Get salary
-            salary = job_data.get("salary", 100000)
-
+            # Add job data to result
             enhanced_result = {
                 "title": job_title,
-                "matchScore": round(normalized_score, 2),
-                "keySkills": filtered_skills,
-                "missingSkills": sorted(missing_skills),
-                "salary": f"{salary}$"
+                "raw_score": result['raw_score'],
+                "job_data": job_data
             }
 
             enhanced_results.append(enhanced_result)

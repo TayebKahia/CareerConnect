@@ -80,7 +80,7 @@ class TestRecommendNew(unittest.TestCase):
                 job = data['recommendations'][0]
                 self.assertIn('title', job)
                 self.assertIn('score', job)
-                self.assertIn('matchScore', job)
+                self.assertIn('raw_score', job)
 
 
 if __name__ == '__main__':
